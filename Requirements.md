@@ -89,6 +89,7 @@ name
 description
 owner
 status
+jiraKey
 createdAt
 updatedAt
 ```
@@ -122,6 +123,7 @@ reporter
 deadline
 storyPoints
 labels
+jiraKey
 createdAt
 updatedAt
 ```

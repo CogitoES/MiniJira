@@ -1,0 +1,1 @@
+INSERT INTO users (email, username, encrypted_password, role, created_at) VALUES ('avruis@gmail.com', 'user', '$2a$10$diNBCSd9LfE6bMBdi4Nag.Hd2cVQxyI1xIWTZ1x4xqPhzCCf3WDaO', 'USER', CURRENT_TIMESTAMP);
