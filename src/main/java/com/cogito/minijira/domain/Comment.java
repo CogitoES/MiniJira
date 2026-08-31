@@ -27,10 +27,8 @@ public class Comment {
     @com.fasterxml.jackson.annotation.JsonIgnore
     private Task task;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnore
-    private User user;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

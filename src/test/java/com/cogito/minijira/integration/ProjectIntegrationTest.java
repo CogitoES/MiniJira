@@ -2,7 +2,7 @@ package com.cogito.minijira.integration;
 
 import com.cogito.minijira.domain.Project;
 import com.cogito.minijira.domain.User;
-import com.cogito.minijira.dto.ProjectRequest;
+import com.cogito.minijira.common.dto.ProjectRequest;
 import com.cogito.minijira.repository.ProjectRepository;
 import com.cogito.minijira.repository.UserRepository;
 import com.cogito.minijira.service.ProjectService;
@@ -46,7 +46,7 @@ class ProjectIntegrationTest {
         request.setDescription("Integration Description");
         request.setStatus("OPEN");
 
-        Project created = projectService.createProject(request, owner);
+        Project created = projectService.createProject(request, owner.getId());
         assertNotNull(created.getId());
 
         Project retrieved = projectRepository.findById(created.getId()).orElseThrow();

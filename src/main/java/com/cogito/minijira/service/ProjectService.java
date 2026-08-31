@@ -2,7 +2,7 @@ package com.cogito.minijira.service;
 
 import com.cogito.minijira.domain.Project;
 import com.cogito.minijira.domain.User;
-import com.cogito.minijira.dto.ProjectRequest;
+import com.cogito.minijira.common.dto.ProjectRequest;
 import com.cogito.minijira.repository.ProjectRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,7 @@ public class ProjectService {
         this.projectRepository = projectRepository;
     }
 
-    public Project createProject(ProjectRequest request, User owner) {
+    public Project createProject(ProjectRequest request, Long ownerId) {
         if (projectRepository.existsByName(request.getName())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Project with this name already exists");
         }
@@ -27,7 +27,7 @@ public class ProjectService {
         project.setName(request.getName());
         project.setDescription(request.getDescription());
         project.setStatus(request.getStatus());
-        project.setOwner(owner);
+        project.setOwnerId(ownerId);
         return projectRepository.save(project);
     }
 

@@ -30,6 +30,8 @@ public class CommentController {
                                                  @RequestBody Map<String, String> body,
                                                  @AuthenticationPrincipal UserDetails userDetails) {
         String text = body.get("text");
-        return ResponseEntity.ok(commentService.create(taskId, text, userDetails.getUsername()));
+        // TODO: Resolve userId from AuthService via API call
+        Long userId = 1L; // Placeholder
+        return ResponseEntity.ok(commentService.create(taskId, text, userId));
     }
 }

@@ -1,5 +1,7 @@
 package com.cogito.minijira.security;
 
+import com.cogito.minijira.security.JwtAuthenticationEntryPoint;
+import com.cogito.minijira.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,6 +47,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/projects/**").permitAll() // Added this
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .anyRequest().authenticated()

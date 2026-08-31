@@ -2,7 +2,7 @@ package com.cogito.minijira.controller;
 
 import com.cogito.minijira.domain.Project;
 import com.cogito.minijira.domain.User;
-import com.cogito.minijira.dto.ProjectRequest;
+import com.cogito.minijira.common.dto.ProjectRequest;
 import com.cogito.minijira.repository.UserRepository;
 import com.cogito.minijira.service.ProjectService;
 import jakarta.validation.Valid;
@@ -30,17 +30,16 @@ public class ProjectController {
 
     private static final Logger logger = LoggerFactory.getLogger(ProjectController.class);
     private final ProjectService projectService;
-    private final UserRepository userRepository;
 
-    public ProjectController(ProjectService projectService, UserRepository userRepository) {
+    public ProjectController(ProjectService projectService) {
         this.projectService = projectService;
-        this.userRepository = userRepository;
     }
 
     @GetMapping
     public ResponseEntity<List<Project>> getAllProjects() {
         return ResponseEntity.ok(projectService.getAllProjects());
     }
+
 @PutMapping("/{id}")
 public ResponseEntity<Project> updateProject(@PathVariable Long id, @Valid @RequestBody ProjectRequest request) {
     return ResponseEntity.ok(projectService.updateProject(id, request));
@@ -55,15 +54,11 @@ public ResponseEntity<Void> deleteProject(@PathVariable Long id) {
 @PostMapping
 public ResponseEntity<Project> createProject(@Valid @RequestBody ProjectRequest request, 
                                             @AuthenticationPrincipal UserDetails userDetails) {
-// ...
 
         logger.info("Received request to create project: {} for user: {}", request.getName(), userDetails.getUsername());
         
-        return userRepository.findByEmail(userDetails.getUsername())
-                .map(owner -> ResponseEntity.ok(projectService.createProject(request, owner)))
-                .orElseGet(() -> {
-                    logger.warn("User not found with email: {}", userDetails.getUsername());
-                    return ResponseEntity.status(401).build();
-                });
+        // TODO: Resolve userId from AuthService via API call using userDetails.getUsername()
+        Long userId = 1L; // Placeholder for now
+        return ResponseEntity.ok(projectService.createProject(request, userId));
     }
 }

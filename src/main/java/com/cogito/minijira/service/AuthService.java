@@ -1,9 +1,9 @@
 package com.cogito.minijira.service;
 
 import com.cogito.minijira.domain.User;
-import com.cogito.minijira.dto.AuthResponse;
-import com.cogito.minijira.dto.LoginRequest;
-import com.cogito.minijira.dto.RegisterRequest;
+import com.cogito.minijira.common.dto.AuthResponse;
+import com.cogito.minijira.common.dto.LoginRequest;
+import com.cogito.minijira.common.dto.RegisterRequest;
 import com.cogito.minijira.security.JwtTokenProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

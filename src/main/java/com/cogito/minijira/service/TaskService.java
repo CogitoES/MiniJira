@@ -15,12 +15,10 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
-    private final UserRepository userRepository;
 
-    public TaskService(TaskRepository taskRepository, ProjectRepository projectRepository, UserRepository userRepository) {
+    public TaskService(TaskRepository taskRepository, ProjectRepository projectRepository) {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
-        this.userRepository = userRepository;
     }
 
     public List<Task> getByProjectId(Long projectId) {
@@ -29,14 +27,12 @@ public class TaskService {
         return project.getTasks();
     }
 
-    public Task create(Long projectId, Task task, String reporterEmail) {
+    public Task create(Long projectId, Task task, Long reporterId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
-        User reporter = userRepository.findByEmail(reporterEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
         
         task.setProject(project);
-        task.setReporter(reporter);
+        task.setReporterId(reporterId);
         return taskRepository.save(task);
     }
 

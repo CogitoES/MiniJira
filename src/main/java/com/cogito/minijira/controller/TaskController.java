@@ -27,7 +27,9 @@ public class TaskController {
     @PostMapping("/projects/{projectId}/tasks")
     public ResponseEntity<Task> createTask(@PathVariable Long projectId, @RequestBody Task task,
                                            @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(taskService.create(projectId, task, userDetails.getUsername()));
+        // TODO: Resolve userId from AuthService via API call
+        Long userId = 1L; // Placeholder
+        return ResponseEntity.ok(taskService.create(projectId, task, userId));
     }
 
     @PutMapping("/tasks/{taskId}")

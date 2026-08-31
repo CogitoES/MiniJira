@@ -64,7 +64,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
         } else {
-            logger.warn("No token found in request");
+            logger.info("No token found in request, proceeding to next filter");
         }
 
         filterChain.doFilter(request, response);
@@ -73,7 +73,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private String getJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
+            String token = bearerToken.substring(7);
+            if ("undefined".equals(token)) {
+                return null;
+            }
+            return token;
         }
         return null;
     }

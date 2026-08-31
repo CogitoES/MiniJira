@@ -1,7 +1,7 @@
 package com.cogito.minijira.service;
 
 import com.cogito.minijira.domain.User;
-import com.cogito.minijira.dto.RegisterRequest;
+import com.cogito.minijira.common.dto.RegisterRequest;
 import com.cogito.minijira.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

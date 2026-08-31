@@ -32,13 +32,11 @@ public class Task {
     @Column(nullable = false)
     private String priority;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assignee_id")
-    private User assignee;
+    @Column(name = "assignee_id")
+    private Long assigneeId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reporter_id", nullable = false)
-    private User reporter;
+    @Column(name = "reporter_id", nullable = false)
+    private Long reporterId;
 
     private LocalDateTime deadline;
 

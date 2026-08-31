@@ -26,9 +26,8 @@ public class Project {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", nullable = false)
-    private User owner;
+    @Column(name = "owner_id", nullable = false)
+    private Long ownerId;
 
     @Column(nullable = false)
     private String status;

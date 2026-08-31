@@ -2,7 +2,7 @@ package com.cogito.minijira.service;
 
 import com.cogito.minijira.domain.Project;
 import com.cogito.minijira.domain.User;
-import com.cogito.minijira.dto.ProjectRequest;
+import com.cogito.minijira.common.dto.ProjectRequest;
 import com.cogito.minijira.repository.ProjectRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
