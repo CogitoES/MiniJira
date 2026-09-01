@@ -41,7 +41,7 @@ class CommentServiceTest {
         when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(user));
         when(commentRepository.save(any(Comment.class))).thenReturn(comment);
 
-        Comment created = commentService.create(1L, "text", "test@test.com");
+        Comment created = commentService.create(1L, "text", user.getId());
 
         assertNotNull(created);
         verify(commentRepository).save(any(Comment.class));

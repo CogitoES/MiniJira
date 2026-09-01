@@ -23,17 +23,24 @@ const processQueue = (error: any, token: string | null = null) => {
 };
 
 api.interceptors.request.use((config) => {
+  console.log(`[DEBUG] Outgoing Request: ${config.method?.toUpperCase()} ${config.url}`, config);
   const token = localStorage.getItem('accessToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+}, (error) => {
+  console.error('[DEBUG] Request Error:', error);
+  return Promise.reject(error);
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`[DEBUG] Incoming Response: ${response.status} ${response.config.url}`, response);
+    return response;
+  },
   async (error) => {
-    console.log("DEBUG: Interceptor caught error:", error.response?.status);
+    console.log("DEBUG: Interceptor caught error:", error.response?.status, error.message, error.config?.url);
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {

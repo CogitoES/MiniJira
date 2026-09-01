@@ -1,6 +1,6 @@
-package com.cogito.minijira.repository;
+package com.cogito.authminijira.repository.repository;
 
-import com.cogito.minijira.domain.User;
+import com.cogito.authminijira.domain.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

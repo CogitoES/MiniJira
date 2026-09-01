@@ -44,7 +44,7 @@ class ProjectServiceTest {
         when(projectRepository.existsByName(anyString())).thenReturn(false);
         when(projectRepository.save(any(Project.class))).thenAnswer(i -> i.getArguments()[0]);
 
-        Project created = projectService.createProject(projectRequest, owner);
+        Project created = projectService.createProject(projectRequest, owner.getId());
 
         assertNotNull(created);
         assertEquals("New Project", created.getName());
@@ -54,7 +54,7 @@ class ProjectServiceTest {
     @Test
     void createProject_Exists_ShouldThrowException() {
         when(projectRepository.existsByName("New Project")).thenReturn(true);
-        assertThrows(ResponseStatusException.class, () -> projectService.createProject(projectRequest, owner));
+        assertThrows(ResponseStatusException.class, () -> projectService.createProject(projectRequest, owner.getId()));
     }
 
     @Test

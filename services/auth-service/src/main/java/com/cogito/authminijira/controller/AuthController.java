@@ -1,6 +1,6 @@
-package com.cogito.minijira.auth.controller;
+package com.cogito.authminijira.controller;
 
-import com.cogito.minijira.auth.service.AuthService;
+import com.cogito.authminijira.service.AuthService;
 import com.cogito.minijira.common.dto.AuthResponse;
 import com.cogito.minijira.common.dto.LoginRequest;
 import com.cogito.minijira.common.dto.RegisterRequest;

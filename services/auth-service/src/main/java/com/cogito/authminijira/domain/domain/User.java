@@ -1,4 +1,4 @@
-package com.cogito.minijira.domain;
+package com.cogito.authminijira.domain.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package com.cogito.minijira.auth.security;
+package com.cogito.authminijira.security;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

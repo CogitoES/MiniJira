@@ -41,7 +41,7 @@ class TaskServiceTest {
         when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(reporter));
         when(taskRepository.save(any(Task.class))).thenReturn(task);
 
-        Task created = taskService.create(1L, task, "test@test.com");
+        Task created = taskService.create(1L, task, reporter.getId());
 
         assertNotNull(created);
         verify(taskRepository).save(any(Task.class));
