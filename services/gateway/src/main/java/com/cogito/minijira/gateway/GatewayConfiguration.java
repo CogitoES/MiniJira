@@ -1,5 +1,7 @@
 package com.cogito.minijira.gateway;
 
+import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
+import org.springframework.cloud.gateway.route.Route;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -21,9 +23,13 @@ public class GatewayConfiguration {
     @Bean
     public GlobalFilter loggingFilter() {
         return (exchange, chain) -> {
-            logger.info(">>> REQUEST: {} {} - Origin: {} - Headers: {}", 
+            Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
+            String routeId = (route != null) ? route.getId() : "pending-route";
+            
+            logger.info(">>> REQUEST: {} {} - Route: {} - Origin: {} - Headers: {}", 
                     exchange.getRequest().getMethod(), 
                     exchange.getRequest().getURI(), 
+                    routeId,
                     exchange.getRequest().getHeaders().getOrigin(),
                     exchange.getRequest().getHeaders());
             
@@ -42,19 +48,29 @@ public class GatewayConfiguration {
         return builder.routes()
                 .route("auth-service", r -> r
                         .path("/auth/**")
-                        .uri("http://127.0.0.1:8082"))
-                .route("main-service", r -> r
-                        .path("/projects/**", "/tasks/**")
+                        .uri("http://localhost:8082"))
+                .route("project-service", r -> r
+                        .path("/projects/**")
+                        .and().not(p -> p.path("/projects/*/tasks/**"))
+                        .uri("http://localhost:8085"))
+                .route("task-service", r -> r
+                        .path("/projects/*/tasks/**", "/tasks/**")
+                        .and().not(p -> p.path("/tasks/*/comments"))
+                        .uri("http://localhost:8086"))
+                .route("comment-service", r -> r
+                        .path("/tasks/*/comments")
                         .uri("http://localhost:8083"))
+                .route("jira-service", r -> r
+                        .path("/jira/**")
+                        .uri("http://localhost:8084"))
                 .build();
     }
 
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
-        corsConfig.setAllowCredentials(true);
-        corsConfig.addAllowedOrigin("http://localhost:3000");
         corsConfig.addAllowedOrigin("http://localhost:5173");
+        corsConfig.setAllowCredentials(true);
         corsConfig.addAllowedHeader("*");
         corsConfig.addAllowedMethod("*");
         corsConfig.setMaxAge(3600L);
