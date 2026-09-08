@@ -4,11 +4,15 @@ import com.cogito.minijira.domain.Comment;
 import com.cogito.minijira.repository.CommentRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.security.test.context.support.WithMockUser;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import javax.crypto.SecretKey;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -23,27 +27,44 @@ public class CommentIntegrationTest {
     @Autowired
     private CommentRepository commentRepository;
 
+    @Value("${app.jwt.secret}")
+    private String secret;
+
+    private String generateToken(String username) {
+        SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
+        return Jwts.builder()
+                .subject(username)
+                .signWith(key)
+                .compact();
+    }
+
     @Test
-    @WithMockUser
+    @WithMockUser(username = "testuser")
     public void testGetCommentsByTaskId() throws Exception {
+        String token = generateToken("testuser");
         Comment comment = new Comment();
         comment.setTaskId(1L);
         comment.setText("Test comment");
+        comment.setUserId(1L); // Explicitly set user ID for this test
         commentRepository.save(comment);
 
-        mockMvc.perform(get("/tasks/1/comments"))
+        mockMvc.perform(get("/tasks/1/comments")
+                .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].text").value("Test comment"));
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(username = "testuser")
     public void testCreateComment() throws Exception {
+        String token = generateToken("testuser");
         String commentJson = "{\"text\":\"New comment\"}";
 
         mockMvc.perform(post("/tasks/1/comments")
+                .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(commentJson))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.text").value("New comment"));
     }
 }

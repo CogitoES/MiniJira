@@ -4,5 +4,17 @@ spring:
   application:
     name: gateway
 
+services:
+  auth:
+    uri: http://localhost:8082
+  project:
+    uri: http://localhost:8085
+  task:
+    uri: http://localhost:8086
+  comment:
+    uri: http://localhost:8083
+  jira:
+    uri: http://localhost:8084
+
 
 

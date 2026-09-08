@@ -1,5 +1,6 @@
 package com.cogito.minijira.gateway;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.cloud.gateway.route.Route;
 import org.slf4j.Logger;
@@ -9,7 +10,6 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.Ordered;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
@@ -19,6 +19,17 @@ import reactor.core.publisher.Mono;
 public class GatewayConfiguration {
 
     private static final Logger logger = LoggerFactory.getLogger(GatewayConfiguration.class);
+
+    @Value("${services.auth.uri:http://localhost:8082}")
+    private String authServiceUri;
+    @Value("${services.project.uri:http://localhost:8085}")
+    private String projectServiceUri;
+    @Value("${services.task.uri:http://localhost:8086}")
+    private String taskServiceUri;
+    @Value("${services.comment.uri:http://localhost:8083}")
+    private String commentServiceUri;
+    @Value("${services.jira.uri:http://localhost:8084}")
+    private String jiraServiceUri;
 
     @Bean
     public GlobalFilter loggingFilter() {
@@ -48,21 +59,21 @@ public class GatewayConfiguration {
         return builder.routes()
                 .route("auth-service", r -> r
                         .path("/auth/**")
-                        .uri("http://localhost:8082"))
+                        .uri(authServiceUri))
                 .route("project-service", r -> r
                         .path("/projects/**")
                         .and().not(p -> p.path("/projects/*/tasks/**"))
-                        .uri("http://localhost:8085"))
+                        .uri(projectServiceUri))
                 .route("task-service", r -> r
                         .path("/projects/*/tasks/**", "/tasks/**")
                         .and().not(p -> p.path("/tasks/*/comments"))
-                        .uri("http://localhost:8086"))
+                        .uri(taskServiceUri))
                 .route("comment-service", r -> r
                         .path("/tasks/*/comments")
-                        .uri("http://localhost:8083"))
+                        .uri(commentServiceUri))
                 .route("jira-service", r -> r
                         .path("/jira/**")
-                        .uri("http://localhost:8084"))
+                        .uri(jiraServiceUri))
                 .build();
     }
 
