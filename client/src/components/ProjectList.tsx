@@ -27,18 +27,34 @@ const ProjectList = () => {
     }
   });
 
+  const syncMutation = useMutation({
+    mutationFn: projectService.syncWithJira,
+    onError: () => {
+      alert('Failed to sync with Jira.');
+    },
+    onSuccess: () => {
+      alert('Jira synchronization started!');
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    }
+  });
+
   if (isLoading) return <div className="p-6 text-slate-600">Loading projects...</div>;
 
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-3xl font-bold text-slate-900">Projects</h2>
-        <Link 
-          to="/projects/create" 
-          className="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition"
-        >
-          Create Project
-        </Link>
+        <div className="flex gap-3">
+          <button onClick={() => syncMutation.mutate()} className="bg-green-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-green-700 transition">
+            Sync with Jira
+          </button>
+          <Link 
+            to="/projects/create" 
+            className="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition"
+          >
+            Create Project
+          </Link>
+        </div>
       </div>
       <ul className="grid gap-6">
         {(Array.isArray(projects) ? projects : []).map((project) => (

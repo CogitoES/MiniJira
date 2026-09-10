@@ -26,10 +26,10 @@ public class JiraService {
     @Value("${jira.email}")
     private String jiraEmail;
 
-    @Value("${jira.api-token}")
+    @Value("${jira.api.token}")
     private String jiraApiToken;
 
-    @Value("${jira.lead-account-id}")
+    @Value("${jira.lead.account.id}")
     private String jiraLeadAccountId;
 
     private final RestTemplate restTemplate = new RestTemplate();

@@ -18,6 +18,9 @@ export const projectService = {
   delete: async (id: number): Promise<void> => {
     await api.delete(`/projects/${id}`);
   },
+  syncWithJira: async (): Promise<void> => {
+    await api.post(`/jira/sync`);
+  },
   exportToJira: async (projectId: number): Promise<void> => {
     await api.post(`/jira/export/project/${projectId}`);
   },

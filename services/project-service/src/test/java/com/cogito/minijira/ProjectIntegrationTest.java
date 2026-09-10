@@ -90,4 +90,30 @@ public class ProjectIntegrationTest {
                         .content(projectJson))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void createProject_Conflict() throws Exception {
+         ProjectRequest request = new ProjectRequest();
+         request.setName("Test Project");
+         request.setDescription("Description");
+         request.setStatus("ACTIVE");
+        String token = generateToken("testuser");
+
+        // First request should succeed (assuming it doesn't already exist or cleanup is handled)
+         // Since I'm not sure if it exists, let's just make sure we see the conflict on the second one.
+
+         String json = "{\"name\":\"Test Project\", \"description\":\"Description\", \"status\":\"ACTIVE\"}";
+
+         mockMvc.perform(post("/projects")
+                 .contentType(MediaType.APPLICATION_JSON)
+                 .header("Authorization", "Bearer " + token)
+                 .content(json));
+
+         // Second request should conflict
+         mockMvc.perform(post("/projects")
+                         .contentType(MediaType.APPLICATION_JSON)
+                         .header("Authorization", "Bearer " + token)
+                         .content(json))
+                 .andExpect(status().isConflict());
+    }
 }
