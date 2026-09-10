@@ -38,17 +38,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
             try {
-                String username = Jwts.parser()
+                var claims = Jwts.parser()
                         .verifyWith(getSigningKey())
                         .build()
                         .parseSignedClaims(token)
-                        .getPayload()
-                        .getSubject();
+                        .getPayload();
+                
+                String username = claims.getSubject();
+                Long userId = claims.get("userId", Long.class);
 
-                if (username != null) {
-                    logger.info("Successfully authenticated user: {}", username);
+                if (username != null && userId != null) {
+                    logger.info("Successfully authenticated user: {} (ID: {})", username, userId);
+                    UserPrincipal principal = new UserPrincipal(username, userId);
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            username, null, Collections.emptyList());
+                            principal, null, Collections.emptyList());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }

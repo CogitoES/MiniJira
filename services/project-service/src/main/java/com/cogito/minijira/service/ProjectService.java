@@ -21,14 +21,26 @@ public class ProjectService {
     }
 
     public Project createProject(ProjectRequest request, Long ownerId) {
-        if (projectRepository.existsByName(request.getName())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Project with this name already exists");
+        Project project;
+        
+        // Find existing project by jiraKey if provided
+        if (request.getJiraKey() != null) {
+            project = projectRepository.findByJiraKey(request.getJiraKey())
+                    .orElse(projectRepository.findByName(request.getName()).orElse(new Project()));
+        } else {
+            project = projectRepository.findByName(request.getName()).orElse(new Project());
         }
-        Project project = new Project();
+
+        // If it's a new project, set ownerId
+        if (project.getId() == null) {
+            project.setOwnerId(ownerId);
+        }
+
         project.setName(request.getName());
         project.setDescription(request.getDescription());
         project.setStatus(request.getStatus());
-        project.setOwnerId(ownerId);
+        project.setJiraKey(request.getJiraKey());
+        
         return projectRepository.save(project);
     }
 

@@ -2,7 +2,7 @@ package com.cogito.minijira.controller;
 
 import com.cogito.minijira.domain.Comment;
 import com.cogito.minijira.repository.CommentRepository;
-import com.cogito.minijira.service.UserService;
+import com.cogito.minijira.security.UserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -23,9 +23,6 @@ class CommentControllerTest {
 
     @Mock
     private CommentRepository commentRepository;
-
-    @Mock
-    private UserService userService;
 
     @Mock
     private SecurityContext securityContext;
@@ -59,12 +56,11 @@ class CommentControllerTest {
     void createComment_ShouldReturnCreatedComment() {
         Long taskId = 1L;
         Comment comment = new Comment();
-        String username = "testUser";
         Long userId = 100L;
+        UserPrincipal principal = new UserPrincipal("testUser", userId);
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn(username);
-        when(userService.getUserIdByUsername(username)).thenReturn(userId);
+        when(authentication.getPrincipal()).thenReturn(principal);
         when(commentRepository.save(any(Comment.class))).thenReturn(comment);
 
         ResponseEntity<Comment> response = commentController.createComment(taskId, comment);

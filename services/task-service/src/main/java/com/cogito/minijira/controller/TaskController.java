@@ -2,7 +2,7 @@ package com.cogito.minijira.controller;
 
 import com.cogito.minijira.domain.Task;
 import com.cogito.minijira.repository.TaskRepository;
-import com.cogito.minijira.service.UserService;
+import com.cogito.minijira.security.UserPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -13,11 +13,9 @@ import java.util.List;
 public class TaskController {
 
     private final TaskRepository taskRepository;
-    private final UserService userService;
 
-    public TaskController(TaskRepository taskRepository, UserService userService) {
+    public TaskController(TaskRepository taskRepository) {
         this.taskRepository = taskRepository;
-        this.userService = userService;
     }
 
     @GetMapping("/projects/{projectId}/tasks")
@@ -29,10 +27,9 @@ public class TaskController {
     public ResponseEntity<Task> createTask(@PathVariable Long projectId, @RequestBody Task task) {
         task.setProjectId(projectId);
 
-        // Resolve reporterId from SecurityContext
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        task.setReporterId(userService.getUserIdByUsername(username));
+        // Resolve reporterId directly from SecurityContext
+        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        task.setReporterId(principal.getUserId());
 
         return ResponseEntity.ok(taskRepository.save(task));
     }

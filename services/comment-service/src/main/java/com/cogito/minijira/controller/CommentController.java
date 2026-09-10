@@ -2,7 +2,7 @@ package com.cogito.minijira.controller;
 
 import com.cogito.minijira.domain.Comment;
 import com.cogito.minijira.repository.CommentRepository;
-import com.cogito.minijira.service.UserService;
+import com.cogito.minijira.security.UserPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -14,11 +14,9 @@ import java.util.List;
 public class CommentController {
 
     private final CommentRepository commentRepository;
-    private final UserService userService;
 
-    public CommentController(CommentRepository commentRepository, UserService userService) {
+    public CommentController(CommentRepository commentRepository) {
         this.commentRepository = commentRepository;
-        this.userService = userService;
     }
 
     @GetMapping("/{taskId}/comments")
@@ -30,9 +28,9 @@ public class CommentController {
     public ResponseEntity<Comment> createComment(@PathVariable Long taskId, @RequestBody Comment comment) {
         comment.setTaskId(taskId);
 
-        // Resolve userId from SecurityContext
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        comment.setUserId(userService.getUserIdByUsername(username));
+        // Resolve userId directly from SecurityContext
+        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        comment.setUserId(principal.getUserId());
 
         return ResponseEntity.ok(commentRepository.save(comment));
     }

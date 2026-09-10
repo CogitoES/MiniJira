@@ -28,18 +28,20 @@ public class JwtTokenProvider {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
 
-    public String generateToken(String username) {
+    public String generateToken(String username, Long userId) {
         return Jwts.builder()
                 .subject(username)
+                .claim("userId", userId)
                 .issuedAt(new Date())
                 .expiration(new Date(new Date().getTime() + jwtExpirationMs))
                 .signWith(getSigningKey())
                 .compact();
     }
 
-    public String generateRefreshToken(String username) {
+    public String generateRefreshToken(String username, Long userId) {
         return Jwts.builder()
                 .subject(username)
+                .claim("userId", userId)
                 .issuedAt(new Date())
                 .expiration(new Date(new Date().getTime() + jwtRefreshExpirationMs))
                 .signWith(getSigningKey())

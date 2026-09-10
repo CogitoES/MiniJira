@@ -40,6 +40,7 @@ public class TaskIntegrationTest {
         SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
         return Jwts.builder()
                 .subject(username)
+                .claim("userId", 1L)
                 .signWith(key)
                 .compact();
     }

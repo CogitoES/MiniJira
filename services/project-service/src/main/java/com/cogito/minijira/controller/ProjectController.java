@@ -3,10 +3,12 @@ package com.cogito.minijira.controller;
 import com.cogito.minijira.domain.Project;
 import com.cogito.minijira.common.dto.ProjectRequest;
 import com.cogito.minijira.service.ProjectService;
+import com.cogito.minijira.security.UserPrincipal;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -41,9 +43,9 @@ public class ProjectController {
     @PostMapping
     public ResponseEntity<Project> createProject(@Valid @RequestBody ProjectRequest request) {
         logger.info("Received request to create project: {}", request.getName());
-        
-        // TODO: Resolve userId from AuthService/SecurityContext via JWT/API call
-        Long userId = 1L; // Placeholder for now
+
+        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Long userId = principal.getUserId();
         return ResponseEntity.ok(projectService.createProject(request, userId));
     }
 }

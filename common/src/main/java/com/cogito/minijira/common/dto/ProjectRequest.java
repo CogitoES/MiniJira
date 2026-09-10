@@ -4,6 +4,7 @@ public class ProjectRequest {
     private String name;
     private String description;
     private String status;
+    private String jiraKey;
 
     public ProjectRequest() {}
 
@@ -15,4 +16,7 @@ public class ProjectRequest {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getJiraKey() { return jiraKey; }
+    public void setJiraKey(String jiraKey) { this.jiraKey = jiraKey; }
 }

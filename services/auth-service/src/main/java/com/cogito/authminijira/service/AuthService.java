@@ -44,8 +44,8 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getPassword(), user.getEncryptedPassword())) {
             throw new RuntimeException("Invalid password");
         }
-        String token = jwtTokenProvider.generateToken(user.getEmail());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getEmail());
+        String token = jwtTokenProvider.generateToken(user.getEmail(), user.getId());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getEmail(), user.getId());
         
         user.setRefreshToken(refreshToken);
         userRepository.save(user);
@@ -65,6 +65,6 @@ public class AuthService {
             throw new RuntimeException("Refresh token does not match");
         }
         
-        return jwtTokenProvider.generateToken(email);
+        return jwtTokenProvider.generateToken(email, user.getId());
     }
 }

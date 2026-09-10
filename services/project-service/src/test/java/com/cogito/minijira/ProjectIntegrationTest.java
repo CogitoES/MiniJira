@@ -46,6 +46,7 @@ public class ProjectIntegrationTest {
         SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
         return Jwts.builder()
                 .subject(username)
+                .claim("userId", 1L)
                 .signWith(key)
                 .compact();
     }
@@ -92,28 +93,30 @@ public class ProjectIntegrationTest {
     }
 
     @Test
-    void createProject_Conflict() throws Exception {
+    void createProject_UpdatesExisting() throws Exception {
          ProjectRequest request = new ProjectRequest();
          request.setName("Test Project");
-         request.setDescription("Description");
+         request.setDescription("Initial Description");
          request.setStatus("ACTIVE");
-        String token = generateToken("testuser");
+         String token = generateToken("testuser");
 
-        // First request should succeed (assuming it doesn't already exist or cleanup is handled)
-         // Since I'm not sure if it exists, let's just make sure we see the conflict on the second one.
+         String json = "{\"name\":\"Test Project\", \"description\":\"Initial Description\", \"status\":\"ACTIVE\"}";
 
-         String json = "{\"name\":\"Test Project\", \"description\":\"Description\", \"status\":\"ACTIVE\"}";
-
+         // First request creates
          mockMvc.perform(post("/projects")
                  .contentType(MediaType.APPLICATION_JSON)
                  .header("Authorization", "Bearer " + token)
-                 .content(json));
+                 .content(json))
+                 .andExpect(status().isOk());
 
-         // Second request should conflict
+         // Second request updates
+         String updateJson = "{\"name\":\"Test Project\", \"description\":\"Updated Description\", \"status\":\"ACTIVE\"}";
          mockMvc.perform(post("/projects")
                          .contentType(MediaType.APPLICATION_JSON)
                          .header("Authorization", "Bearer " + token)
-                         .content(json))
-                 .andExpect(status().isConflict());
+                         .content(updateJson))
+                 .andExpect(status().isOk());
+         
+         assertThat(projectRepository.findByName("Test Project").get().getDescription()).isEqualTo("Updated Description");
     }
 }

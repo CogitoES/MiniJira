@@ -2,7 +2,7 @@ package com.cogito.minijira.controller;
 
 import com.cogito.minijira.domain.Task;
 import com.cogito.minijira.repository.TaskRepository;
-import com.cogito.minijira.service.UserService;
+import com.cogito.minijira.security.UserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -23,9 +23,6 @@ class TaskControllerTest {
 
     @Mock
     private TaskRepository taskRepository;
-
-    @Mock
-    private UserService userService;
 
     @Mock
     private SecurityContext securityContext;
@@ -59,12 +56,11 @@ class TaskControllerTest {
     void createTask_ShouldReturnCreatedTask() {
         Long projectId = 1L;
         Task task = new Task();
-        String username = "testUser";
         Long userId = 100L;
+        UserPrincipal principal = new UserPrincipal("testUser", userId);
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn(username);
-        when(userService.getUserIdByUsername(username)).thenReturn(userId);
+        when(authentication.getPrincipal()).thenReturn(principal);
         when(taskRepository.save(any(Task.class))).thenReturn(task);
 
         ResponseEntity<Task> response = taskController.createTask(projectId, task);
