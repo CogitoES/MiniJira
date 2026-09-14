@@ -13,6 +13,7 @@ import Layout from './components/Layout';
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { accessToken } = useAuth();
+  console.log('ProtectedRoute evaluated, accessToken:', accessToken);
   return accessToken ? <Layout>{children}</Layout> : <Navigate to="/login" />;
 };
 

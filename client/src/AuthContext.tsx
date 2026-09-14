@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { authService } from './authService';
 import type { LoginRequest } from './types';
 
@@ -16,6 +16,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(localStorage.getItem('accessToken'));
   const [refreshToken, setRefreshToken] = useState<string | null>(localStorage.getItem('refreshToken'));
 
+  console.log('AuthProvider initialized, accessToken:', accessToken);
+
   const login = async (credentials: LoginRequest) => {
     const data = await authService.login(credentials);
     setAccessToken(data.accessToken);
@@ -30,6 +32,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
   };
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      logout();
+    };
+    window.addEventListener('unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('unauthorized', handleUnauthorized);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ accessToken, refreshToken, login, logout, setAccessToken }}>

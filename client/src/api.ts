@@ -43,6 +43,7 @@ api.interceptors.response.use(
     console.log("DEBUG: Interceptor caught error:", error.response?.status, error.message, error.config?.url);
     const originalRequest = error.config;
 
+    // Handle 401 Unauthorized - Access Token expired or invalid
     if (error.response?.status === 401 && !originalRequest._retry) {
       console.log("DEBUG: 401 caught, attempting refresh...");
       if (isRefreshing) {
@@ -69,7 +70,7 @@ api.interceptors.response.use(
         processQueue(error);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        window.dispatchEvent(new Event('unauthorized'));
         return Promise.reject(error);
       }
 
@@ -94,7 +95,7 @@ api.interceptors.response.use(
         isRefreshing = false;
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        window.dispatchEvent(new Event('unauthorized'));
         return Promise.reject(refreshError);
       }
     }

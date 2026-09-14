@@ -1,4 +1,4 @@
-package com.cogito.jiraminijira.dto;
+package com.cogito.minijira.dto;
 
 import lombok.Data;
 import java.util.List;

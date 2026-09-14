@@ -1,6 +1,6 @@
-package com.cogito.jiraminijira.controller;
+package com.cogito.minijira.controller;
 
-import com.cogito.jiraminijira.service.JiraSyncService;
+import com.cogito.minijira.service.JiraSyncService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

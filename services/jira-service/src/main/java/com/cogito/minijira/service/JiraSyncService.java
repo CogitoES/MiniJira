@@ -1,6 +1,7 @@
-package com.cogito.jiraminijira.service;
+package com.cogito.minijira.service;
 
-import com.cogito.jiraminijira.dto.*;
+import com.cogito.minijira.common.dto.CommentDto;
+import com.cogito.minijira.dto.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,15 +35,19 @@ public class JiraSyncService {
     @Value("${task.service.url}")
     private String taskServiceUrl;
 
+    @Value("${comment.service.url}")
+    private String commentServiceUrl;
+
+    @Value("${app.internal.secret}")
+    private String internalSecret;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     public void syncAll(String userJwt) {
         logger.info("Starting JIRA synchronization");
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(userJwt);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<>(headers);
+        HttpHeaders internalHeaders = getInternalServiceHeaders();
+        internalHeaders.setContentType(MediaType.APPLICATION_JSON);
 
         List<JiraProjectDto> projects = fetchProjectsFromJira();
         for (JiraProjectDto projectDto : projects) {
@@ -56,9 +61,12 @@ public class JiraSyncService {
                 projectRequest.setDescription(projectDto.getDescription());
                 projectRequest.setStatus("ACTIVE");
 
+                HttpEntity<com.cogito.minijira.common.dto.ProjectRequest> entity = new HttpEntity<>(projectRequest, internalHeaders);
+                logger.info("Sending request to {} with headers: {}", projectServiceUrl + "/projects", entity.getHeaders());
+                
                 ResponseEntity<com.cogito.minijira.common.dto.ProjectDto> projectResponse = restTemplate.postForEntity(
                         projectServiceUrl + "/projects",
-                        new HttpEntity<>(projectRequest, headers),
+                        entity,
                         com.cogito.minijira.common.dto.ProjectDto.class
                 );
                 projectId = projectResponse.getBody().getId();
@@ -74,31 +82,73 @@ public class JiraSyncService {
                     try {
                         com.cogito.minijira.common.dto.TaskDto task = new com.cogito.minijira.common.dto.TaskDto();
                         task.setTitle(issueDto.getFields().getSummary());
-                        // task.setDescription(issueDto.getFields().getDescription().toString());
                         task.setStatus(issueDto.getFields().getStatus() != null ? issueDto.getFields().getStatus().getName() : "OPEN");
                         task.setPriority(issueDto.getFields().getPriority() != null ? issueDto.getFields().getPriority().getName() : "MEDIUM");
                         task.setJiraKey(issueDto.getKey());
 
-                        restTemplate.postForEntity(
+                        // POST the task
+                        ResponseEntity<com.cogito.minijira.common.dto.TaskDto> taskResponse = restTemplate.postForEntity(
                                 taskServiceUrl + "/projects/" + projectId + "/tasks",
-                                new HttpEntity<>(task, headers),
+                                new HttpEntity<>(task, internalHeaders),
                                 com.cogito.minijira.common.dto.TaskDto.class
                         );
-                        logger.info("Task synchronized: {}", issueDto.getKey());
+                        Long taskId = taskResponse.getBody().getId(); // Assuming TaskDto has an ID
+                        logger.info("Task synchronized: {} (ID: {})", issueDto.getKey(), taskId);
+
+                        // 3. Sync comments for the task
+                        List<JiraCommentDto> comments = fetchCommentsFromJira(issueDto.getKey());
+                        for (JiraCommentDto commentDto : comments) {
+                            try {
+                                CommentDto comment = new CommentDto();
+                                comment.setText(extractTextFromAdf(commentDto.getBody()));
+                                comment.setJiraKey(commentDto.getId());
+                                
+                                restTemplate.postForEntity(
+                                        commentServiceUrl + "/tasks/" + taskId + "/comments",
+                                        new HttpEntity<>(comment, internalHeaders),
+                                        CommentDto.class
+                                );
+                                logger.info("Comment synchronized: {}", commentDto.getId());
+                            } catch (Exception e) {
+                                logger.error("Failed to sync comment: {}", commentDto.getId(), e);
+                            }
+                        }
                     } catch (Exception e) {
                         logger.error("Failed to sync task: {}", issueDto.getKey(), e);
-                    }
-
-                    List<JiraCommentDto> comments = fetchCommentsFromJira(issueDto.getKey());
-                    for (JiraCommentDto commentDto : comments) {
-                        // 3. Create comment in comment-service
-                        // TODO: Call comment-service POST /tasks/{taskId}/comments
-                        logger.info("Syncing comment: {}", commentDto.getId());
                     }
                 }
             }
         }
         logger.info("JIRA synchronization completed");
+    }
+
+    @SuppressWarnings("unchecked")
+    private String extractTextFromAdf(Object adf) {
+        if (!(adf instanceof java.util.Map)) {
+            return adf != null ? adf.toString() : "";
+        }
+        java.util.Map<String, Object> map = (java.util.Map<String, Object>) adf;
+        
+        StringBuilder sb = new StringBuilder();
+        if (map.containsKey("text")) {
+            sb.append(map.get("text"));
+        }
+        if (map.containsKey("content")) {
+            Object content = map.get("content");
+            if (content instanceof java.util.List) {
+                for (Object item : (java.util.List<Object>) content) {
+                    sb.append(extractTextFromAdf(item));
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+    private HttpHeaders getInternalServiceHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        logger.info("Setting internal secret header: {}", internalSecret);
+        headers.set("X-Internal-Service-Secret", internalSecret);
+        return headers;
     }
 
     public List<JiraProjectDto> fetchProjectsFromJira() {

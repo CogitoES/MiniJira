@@ -69,7 +69,7 @@ public class GatewayConfiguration {
                         .and().not(p -> p.path("/tasks/*/comments"))
                         .uri(taskServiceUri))
                 .route("comment-service", r -> r
-                        .path("/tasks/*/comments")
+                        .path("/tasks/*/comments", "/comments/**")
                         .uri(commentServiceUri))
                 .route("jira-service", r -> r
                         .path("/jira/**")

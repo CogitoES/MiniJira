@@ -54,12 +54,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             principal, null, Collections.emptyList());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                } else {
+                    logger.warn("JWT validation successful but claims missing: username={}, userId={}", username, userId);
                 }
             } catch (Exception e) {
-                logger.error("JWT validation failed", e);
+                logger.error("JWT validation failed for token: {}. Error: {}", token, e.getMessage());
             }
         } else {
             logger.warn("Request missing or invalid Authorization header: {} {}", request.getMethod(), request.getRequestURI());
+            // If the header is missing, we shouldn't necessarily fail here because 
+            // other filters (like InternalServiceFilter) might handle authentication.
+            // However, if we reach this point and no auth is set, we must allow 
+            // the filter chain to continue so the AuthenticationEntryPoint can 
+            // trigger the 401.
         }
         filterChain.doFilter(request, response);
     }

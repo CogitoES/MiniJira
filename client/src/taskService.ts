@@ -25,4 +25,10 @@ export const taskService = {
     const response = await api.post(`/tasks/${taskId}/comments`, { text });
     return response.data;
   },
+  clearDatabase: async (): Promise<void> => {
+    await api.post(`/tasks/admin/clear-db`);
+  },
+  clearCommentsDatabase: async (): Promise<void> => {
+    await api.post(`/comments/admin/clear-db`);
+  },
 };

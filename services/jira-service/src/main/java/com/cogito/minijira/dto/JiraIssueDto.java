@@ -1,8 +1,7 @@
-package com.cogito.jiraminijira.dto;
+package com.cogito.minijira.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
-import java.util.Map;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)

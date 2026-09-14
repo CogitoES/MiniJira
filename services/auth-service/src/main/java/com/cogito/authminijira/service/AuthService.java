@@ -67,4 +67,8 @@ public class AuthService {
         
         return jwtTokenProvider.generateToken(email, user.getId());
     }
+
+    public boolean exists(Long id) {
+        return userRepository.existsById(id);
+    }
 }

@@ -27,6 +27,9 @@ public class Comment {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String text;
 
+    @Column(unique = true)
+    private String jiraKey;
+
     @Column(name = "task_id", nullable = false)
     private Long taskId;
 
