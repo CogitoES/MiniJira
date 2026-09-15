@@ -66,16 +66,23 @@ public class GatewayConfiguration {
                         .uri(projectServiceUri))
                 .route("task-service", r -> r
                         .path("/projects/*/tasks/**", "/tasks/**")
-                        .and().not(p -> p.path("/tasks/*/comments"))
+                        .and().not(p -> p.path("/tasks/*/comments", "/tasks/comments/**"))
                         .uri(taskServiceUri))
                 .route("comment-service", r -> r
-                        .path("/tasks/*/comments", "/comments/**")
+                        .path("/tasks/*/comments", "/tasks/comments/**", "/comments/**")
                         .uri(commentServiceUri))
                 .route("jira-service", r -> r
                         .path("/jira/**")
                         .uri(jiraServiceUri))
                 .build();
     }
+
+    // Wrap the RouteLocator in a custom implementation or add a filter to log matching?
+    // Since I cannot easily change the RouteLocator structure, I will add a GlobalFilter to log the route ID.
+    // The current loggingFilter already logs the route ID.
+    // Let me check why it's still "task-service".
+    // Ah, the route "task-service" matches "/tasks/**" and it doesn't have an `and().not(...)` condition that excludes "/tasks/comments/**".
+    // Let me update the task-service route to also exclude "/tasks/comments/**".
 
     @Bean
     public CorsWebFilter corsWebFilter() {

@@ -71,4 +71,14 @@ public class CommentController {
 
         return ResponseEntity.ok(commentRepository.save(comment));
     }
+
+    @PutMapping("/comments/{commentId}")
+    public ResponseEntity<Comment> updateComment(@PathVariable Long commentId, @RequestBody Comment commentDetails) {
+        return commentRepository.findById(commentId)
+                .map(comment -> {
+                    comment.setText(commentDetails.getText());
+                    return ResponseEntity.ok(commentRepository.save(comment));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
 }

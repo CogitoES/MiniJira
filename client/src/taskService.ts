@@ -14,6 +14,10 @@ export const taskService = {
     const response = await api.put(`/tasks/${taskId}`, data);
     return response.data;
   },
+  updateComment: async (commentId: number, text: string): Promise<Comment> => {
+    const response = await api.put(`/tasks/comments/${commentId}`, { text });
+    return response.data;
+  },
   delete: async (taskId: number): Promise<void> => {
     await api.delete(`/tasks/${taskId}`);
   },

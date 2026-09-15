@@ -65,6 +65,22 @@ public class ProjectIntegrationTest {
 
     @Test
     @WithMockUser
+    public void testGetProjectById() throws Exception {
+        String token = generateToken("testuser");
+        Project project = new Project();
+        project.setName("Test Project");
+        project.setOwnerId(1L);
+        project.setStatus("ACTIVE");
+        project = projectRepository.save(project);
+
+        mockMvc.perform(get("/projects/" + project.getId())
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Test Project"));
+    }
+
+    @Test
+    @WithMockUser
     public void testGetAllProjects() throws Exception {
         String token = generateToken("testuser");
         Project project = new Project();

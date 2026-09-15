@@ -60,6 +60,7 @@ public class JiraSyncService {
                 projectRequest.setName(projectDto.getName());
                 projectRequest.setDescription(projectDto.getDescription());
                 projectRequest.setStatus("ACTIVE");
+                projectRequest.setJiraKey(projectDto.getKey());
 
                 HttpEntity<com.cogito.minijira.common.dto.ProjectRequest> entity = new HttpEntity<>(projectRequest, internalHeaders);
                 logger.info("Sending request to {} with headers: {}", projectServiceUrl + "/projects", entity.getHeaders());

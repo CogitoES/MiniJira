@@ -9,6 +9,8 @@ interface CommentListProps {
 
 const CommentList = ({ taskId }: CommentListProps) => {
   const [text, setText] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editText, setEditText] = useState('');
   const queryClient = useQueryClient();
 
   const { data: comments, isLoading } = useQuery({
@@ -24,6 +26,14 @@ const CommentList = ({ taskId }: CommentListProps) => {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ commentId, text }: { commentId: number; text: string }) => taskService.updateComment(commentId, text),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', taskId] });
+      setEditingCommentId(null);
+    },
+  });
+
   if (isLoading) return <div className="text-sm text-slate-500">Loading comments...</div>;
 
   return (
@@ -34,8 +44,20 @@ const CommentList = ({ taskId }: CommentListProps) => {
           <div key={comment.id} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
             <div className="flex justify-between text-xs text-slate-500 mb-1">
               <span>{new Date(comment.createdAt).toLocaleString()}</span>
+              {editingCommentId === comment.id ? (
+                <div className="flex gap-2">
+                  <button onClick={() => updateMutation.mutate({ commentId: comment.id, text: editText })} className="text-green-600">Save</button>
+                  <button onClick={() => setEditingCommentId(null)} className="text-slate-600">Cancel</button>
+                </div>
+              ) : (
+                <button onClick={() => { setEditingCommentId(comment.id); setEditText(comment.text); }} className="text-blue-600">Edit</button>
+              )}
             </div>
-            <p className="text-slate-800">{comment.text}</p>
+            {editingCommentId === comment.id ? (
+              <input className="border border-slate-300 rounded-lg p-1 w-full" value={editText} onChange={(e) => setEditText(e.target.value)} />
+            ) : (
+              <p className="text-slate-800">{comment.text}</p>
+            )}
           </div>
         ))}
       </div>

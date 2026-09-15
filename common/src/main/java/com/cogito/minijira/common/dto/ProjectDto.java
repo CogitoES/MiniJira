@@ -8,4 +8,5 @@ public class ProjectDto {
     private String name;
     private String description;
     private String status;
+    private String jiraKey;
 }

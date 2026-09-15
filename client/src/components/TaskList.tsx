@@ -7,6 +7,8 @@ import CommentList from './CommentList';
 const TaskList = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const [title, setTitle] = useState('');
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState('');
   const queryClient = useQueryClient();
 
   const { data: tasks, isLoading } = useQuery({
@@ -19,6 +21,14 @@ const TaskList = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
       setTitle('');
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ taskId, data }: { taskId: number; data: any }) => taskService.update(taskId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      setEditingTaskId(null);
     },
   });
 
@@ -47,7 +57,19 @@ const TaskList = () => {
         {(Array.isArray(tasks) ? tasks : []).map((task) => (
           <li key={task.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex justify-between items-center">
-              <span className="font-medium text-slate-900">{task.title}</span>
+              {editingTaskId === task.id ? (
+                <div className="flex gap-2">
+                  <input
+                    className="border border-slate-300 rounded-lg p-2"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                  />
+                  <button onClick={() => updateMutation.mutate({ taskId: task.id, data: { ...task, title: editTitle } })} className="text-green-600">Save</button>
+                  <button onClick={() => setEditingTaskId(null)} className="text-slate-600">Cancel</button>
+                </div>
+              ) : (
+                <span className="font-medium text-slate-900" onClick={() => { setEditingTaskId(task.id); setEditTitle(task.title); }}>{task.title}</span>
+              )}
               <button onClick={() => deleteMutation.mutate(task.id)} className="text-red-600 hover:text-red-700 font-medium">Delete</button>
             </div>
             <CommentList taskId={task.id} />

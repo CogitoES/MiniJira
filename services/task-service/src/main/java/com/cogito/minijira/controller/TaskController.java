@@ -74,6 +74,19 @@ public class TaskController {
         return ResponseEntity.ok(taskRepository.save(task));
     }
 
+    @PutMapping("/tasks/{taskId}")
+    public ResponseEntity<Task> updateTask(@PathVariable Long taskId, @RequestBody Task taskDetails) {
+        return taskRepository.findById(taskId)
+                .map(task -> {
+                    task.setTitle(taskDetails.getTitle());
+                    task.setDescription(taskDetails.getDescription());
+                    task.setStatus(taskDetails.getStatus());
+                    task.setPriority(taskDetails.getPriority());
+                    return ResponseEntity.ok(taskRepository.save(task));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/tasks/{taskId}")
     public ResponseEntity<Void> deleteTask(@PathVariable Long taskId) {
         if (!taskRepository.existsById(taskId)) {
