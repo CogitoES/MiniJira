@@ -6,7 +6,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.Collections;
 
+/**
+ * UserPrincipal - Spring Security User Details Implementation
+ */
 public class UserPrincipal implements UserDetails {
+    
     private final String username;
     private final Long userId;
 

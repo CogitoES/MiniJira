@@ -1,5 +1,6 @@
 package com.cogito.minijira.controller;
 
+import com.cogito.minijira.client.AuthClient;
 import com.cogito.minijira.domain.Task;
 import com.cogito.minijira.repository.TaskRepository;
 import com.cogito.minijira.security.UserPrincipal;
@@ -25,6 +26,9 @@ class TaskControllerTest {
     private TaskRepository taskRepository;
 
     @Mock
+    private AuthClient authClient;
+
+    @Mock
     private SecurityContext securityContext;
 
     @Mock
@@ -37,6 +41,7 @@ class TaskControllerTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         SecurityContextHolder.setContext(securityContext);
+        when(authClient.exists(anyLong())).thenReturn(true);
     }
 
     @Test

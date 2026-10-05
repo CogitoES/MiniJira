@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 @EnableFeignClients
 @ComponentScan(basePackages = {"com.cogito.jiraminijira", "com.cogito.minijira"})
 public class JiraServiceApplication {
+    
     public static void main(String[] args) {
         SpringApplication.run(JiraServiceApplication.class, args);
     }

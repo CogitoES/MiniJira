@@ -1,5 +1,6 @@
 package com.cogito.minijira.controller;
 
+import com.cogito.minijira.client.AuthClient;
 import com.cogito.minijira.domain.Comment;
 import com.cogito.minijira.repository.CommentRepository;
 import com.cogito.minijira.security.UserPrincipal;
@@ -25,6 +26,9 @@ class CommentControllerTest {
     private CommentRepository commentRepository;
 
     @Mock
+    private AuthClient authClient;
+
+    @Mock
     private SecurityContext securityContext;
 
     @Mock
@@ -37,6 +41,7 @@ class CommentControllerTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         SecurityContextHolder.setContext(securityContext);
+        when(authClient.exists(anyLong())).thenReturn(true);
     }
 
     @Test

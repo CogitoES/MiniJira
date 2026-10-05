@@ -9,6 +9,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
+/**
+ * Project Entity - Represents a project in the system
+ */
 @Entity
 @Table(name = "projects")
 @Getter
@@ -26,11 +29,11 @@ public class Project {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "owner_id", nullable = false)
-    private Long ownerId;
-
     @Column(nullable = false)
     private String status;
+
+    @Column(name = "owner_id", nullable = false)
+    private Long ownerId;
 
     @Column(unique = true)
     private String jiraKey;

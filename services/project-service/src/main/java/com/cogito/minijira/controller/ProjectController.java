@@ -15,19 +15,44 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Project Controller - REST endpoints for project management
+ * 
+ * Provides endpoints for creating, retrieving, updating, and deleting projects.
+ * All endpoints require authentication except for retrieval operations.
+ */
 @RestController
 @RequestMapping("/projects")
 public class ProjectController {
 
+    // ========== Logger ==========
+
     private static final Logger logger = LoggerFactory.getLogger(ProjectController.class);
+
+    // ========== Dependencies ==========
+
     private final ProjectService projectService;
     private final AuthClient authClient;
 
+    /**
+     * Constructs a ProjectController with required dependencies
+     * 
+     * @param projectService the project business logic service
+     * @param authClient the Feign client for auth service communication
+     */
     public ProjectController(ProjectService projectService, AuthClient authClient) {
         this.projectService = projectService;
         this.authClient = authClient;
     }
 
+    // ========== Private Methods ==========
+
+    /**
+     * Validates that a user exists in the auth service
+     * 
+     * @param userId the user ID to validate
+     * @throws org.springframework.web.server.ResponseStatusException if user does not exist
+     */
     private void validateUserExists(Long userId) {
         try {
             Boolean exists = authClient.exists(userId);
@@ -40,27 +65,59 @@ public class ProjectController {
         }
     }
 
+    // ========== REST Endpoints ==========
+
+    /**
+     * Retrieves all projects
+     * 
+     * @return a list of all projects
+     */
     @GetMapping
     public ResponseEntity<List<Project>> getAllProjects() {
         return ResponseEntity.ok(projectService.getAllProjects());
     }
 
+    /**
+     * Retrieves a specific project by ID
+     * 
+     * @param id the project ID
+     * @return the project details
+     */
     @GetMapping("/{id}")
     public ResponseEntity<Project> getProject(@PathVariable Long id) {
         return ResponseEntity.ok(projectService.getProjectById(id));
     }
 
+    /**
+     * Updates an existing project
+     * 
+     * @param id the project ID to update
+     * @param request the updated project data
+     * @return the updated project
+     */
     @PutMapping("/{id}")
     public ResponseEntity<Project> updateProject(@PathVariable Long id, @Valid @RequestBody ProjectRequest request) {
         return ResponseEntity.ok(projectService.updateProject(id, request));
     }
 
+    /**
+     * Deletes a project
+     * 
+     * @param id the project ID to delete
+     * @return no content response
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProject(@PathVariable Long id) {
         projectService.deleteProject(id);
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Creates a new project
+     * 
+     * @param request the project creation data
+     * @return the created project
+     */
     @PostMapping
     public ResponseEntity<Project> createProject(@Valid @RequestBody ProjectRequest request) {
         logger.info("Received request to create project: {}", request.getName());

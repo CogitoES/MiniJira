@@ -1,13 +1,13 @@
 package com.cogito.minijira.gateway;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
-import org.springframework.cloud.gateway.route.Route;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.cloud.gateway.route.Route;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
+import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -15,45 +15,80 @@ import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import reactor.core.publisher.Mono;
 
+/**
+ * Gateway Configuration - Configures Spring Cloud Gateway routing and filters
+ * 
+ * Defines routes to all backend microservices (auth, project, task, comment, jira),
+ * implements request/response logging, and configures CORS for client applications.
+ */
 @Configuration
 public class GatewayConfiguration {
 
+    // ========== Logging ==========
+
     private static final Logger logger = LoggerFactory.getLogger(GatewayConfiguration.class);
 
+    // ========== Service URIs ==========
+
+    /** Auth Service URI from configuration */
     @Value("${services.auth.uri:http://localhost:8082}")
     private String authServiceUri;
+    
+    /** Project Service URI from configuration */
     @Value("${services.project.uri:http://localhost:8085}")
     private String projectServiceUri;
+    
+    /** Task Service URI from configuration */
     @Value("${services.task.uri:http://localhost:8086}")
     private String taskServiceUri;
+    
+    /** Comment Service URI from configuration */
     @Value("${services.comment.uri:http://localhost:8083}")
     private String commentServiceUri;
+    
+    /** Jira Service URI from configuration */
     @Value("${services.jira.uri:http://localhost:8084}")
     private String jiraServiceUri;
 
+    // ========== Bean Definitions ==========
+
+    /**
+     * Creates a global logging filter for request/response logging
+     * 
+     * Logs all incoming requests and outgoing responses including method,
+     * URI, route ID, and response status.
+     * 
+     * @return configured GlobalFilter for logging
+     */
     @Bean
     public GlobalFilter loggingFilter() {
         return (exchange, chain) -> {
             Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
             String routeId = (route != null) ? route.getId() : "pending-route";
             
-            logger.info(">>> REQUEST: {} {} - Route: {} - Origin: {} - Headers: {}", 
+            logger.info(">>> REQUEST: {} {} - Route: {} - Origin: {}", 
                     exchange.getRequest().getMethod(), 
                     exchange.getRequest().getURI(), 
                     routeId,
-                    exchange.getRequest().getHeaders().getOrigin(),
-                    exchange.getRequest().getHeaders());
+                    exchange.getRequest().getHeaders().getOrigin());
             
             return chain.filter(exchange).then(Mono.fromRunnable(() -> {
-                logger.info("<<< RESPONSE: {} {} - Status: {} - Headers: {}", 
+                logger.info("<<< RESPONSE: {} {} - Status: {}", 
                         exchange.getRequest().getMethod(), 
                         exchange.getRequest().getURI(), 
-                        exchange.getResponse().getStatusCode(),
-                        exchange.getResponse().getHeaders());
+                        exchange.getResponse().getStatusCode());
             }));
         };
     }
 
+    /**
+     * Configures the route locator for request routing
+     * 
+     * Defines routes for auth, project, task, comment, and jira services.
+     * 
+     * @param builder the RouteLocatorBuilder for route configuration
+     * @return configured RouteLocator
+     */
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
@@ -77,13 +112,14 @@ public class GatewayConfiguration {
                 .build();
     }
 
-    // Wrap the RouteLocator in a custom implementation or add a filter to log matching?
-    // Since I cannot easily change the RouteLocator structure, I will add a GlobalFilter to log the route ID.
-    // The current loggingFilter already logs the route ID.
-    // Let me check why it's still "task-service".
-    // Ah, the route "task-service" matches "/tasks/**" and it doesn't have an `and().not(...)` condition that excludes "/tasks/comments/**".
-    // Let me update the task-service route to also exclude "/tasks/comments/**".
-
+    /**
+     * Configures CORS for the gateway
+     * 
+     * Allows requests from localhost:5173 (frontend) with credentials,
+     * all headers, and all HTTP methods.
+     * 
+     * @return configured CorsWebFilter
+     */
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();

@@ -1,5 +1,6 @@
 package com.cogito.minijira.controller;
 
+import com.cogito.minijira.client.AuthClient;
 import com.cogito.minijira.common.dto.ProjectRequest;
 import com.cogito.minijira.domain.Project;
 import com.cogito.minijira.service.ProjectService;
@@ -25,12 +26,16 @@ class ProjectControllerTest {
     @Mock
     private ProjectService projectService;
 
+    @Mock
+    private AuthClient authClient;
+
     @InjectMocks
     private ProjectController projectController;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        when(authClient.exists(anyLong())).thenReturn(true);
     }
 
     @Test

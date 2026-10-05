@@ -1,13 +1,17 @@
 package com.cogito.minijira;
 
+import com.cogito.minijira.client.AuthClient;
 import com.cogito.minijira.domain.Comment;
 import com.cogito.minijira.repository.CommentRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.security.test.context.support.WithMockUser;
 import io.jsonwebtoken.Jwts;
@@ -26,6 +30,14 @@ public class CommentIntegrationTest {
 
     @Autowired
     private CommentRepository commentRepository;
+
+    @MockitoBean
+    private AuthClient authClient;
+
+    @BeforeEach
+    public void setUp() {
+        Mockito.when(authClient.exists(Mockito.anyLong())).thenReturn(true);
+    }
 
     @Value("${app.jwt.secret}")
     private String secret;

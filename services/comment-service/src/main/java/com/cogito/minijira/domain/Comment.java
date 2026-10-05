@@ -8,17 +8,15 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
+/**
+ * Comment Entity - Represents a comment on a task
+ */
 @Entity
 @Table(name = "comments")
 @Getter
 @Setter
 @EntityListeners(AuditingEntityListener.class)
 public class Comment {
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,16 +25,21 @@ public class Comment {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String text;
 
-    @Column(unique = true)
-    private String jiraKey;
-
     @Column(name = "task_id", nullable = false)
     private Long taskId;
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    @Column(unique = true)
+    private String jiraKey;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }

@@ -1,10 +1,13 @@
 package com.cogito.minijira.common.dto;
 
 import lombok.Data;
-import java.time.LocalDateTime;
 
+/**
+ * Task Data Transfer Object - Represents a task for API communication
+ */
 @Data
 public class TaskDto {
+    
     private Long id;
     private String title;
     private String description;

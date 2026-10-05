@@ -11,6 +11,7 @@ import org.springframework.context.annotation.ComponentScan;
 @EnableFeignClients
 @ComponentScan(basePackages = {"com.cogito.minijira", "com.cogito.authminijira"})
 public class AuthServiceApplication {
+    
     public static void main(String[] args) {
         SpringApplication.run(AuthServiceApplication.class, args);
     }

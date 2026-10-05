@@ -9,23 +9,15 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
+/**
+ * Task Entity - Represents a task/issue in the system
+ */
 @Entity
 @Table(name = "tasks")
 @Getter
 @Setter
 @EntityListeners(AuditingEntityListener.class)
 public class Task {
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,9 +42,7 @@ public class Task {
     private Long reporterId;
 
     private LocalDateTime deadline;
-
     private Integer storyPoints;
-
     private String labels;
 
     @Column(unique = true)
@@ -68,4 +58,15 @@ public class Task {
     @LastModifiedDate
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

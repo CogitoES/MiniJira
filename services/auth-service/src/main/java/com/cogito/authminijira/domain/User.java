@@ -1,4 +1,4 @@
-package com.cogito.authminijira.domain.domain;
+package com.cogito.authminijira.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -8,6 +8,13 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
+/**
+ * User Entity - Represents a user account in the system
+ * 
+ * This JPA entity represents a user account with authentication credentials
+ * and session management. Users can be assigned tasks, report issues, and
+ * have their roles tracked for authorization purposes.
+ */
 @Entity
 @Table(name = "users")
 @Getter
@@ -28,13 +35,13 @@ public class User {
     @Column(name = "password", nullable = false)
     private String encryptedPassword;
 
+    @Column(name = "refresh_token", length = 1000)
+    private String refreshToken;
+
+    @Column(nullable = false)
+    private String role;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @Column(nullable = false)
-    private String role; // Consider Enum for better type safety later
-
-    @Column(name = "refresh_token", length = 1000)
-    private String refreshToken;
 }

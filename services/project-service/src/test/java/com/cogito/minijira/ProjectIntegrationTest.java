@@ -1,18 +1,22 @@
 package com.cogito.minijira;
 
+import com.cogito.minijira.client.AuthClient;
 import com.cogito.minijira.domain.Project;
 import com.cogito.minijira.common.dto.ProjectRequest;
 import com.cogito.minijira.repository.ProjectRepository;
 import com.cogito.minijira.service.ProjectService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +42,15 @@ public class ProjectIntegrationTest {
 
     @Autowired
     private ProjectService projectService;
+
+    @MockitoBean
+    private AuthClient authClient;
+
+    @BeforeEach
+    public void setUp() {
+        projectRepository.deleteAll();
+        Mockito.when(authClient.exists(Mockito.anyLong())).thenReturn(true);
+    }
 
     @Value("${app.jwt.secret}")
     private String secret;

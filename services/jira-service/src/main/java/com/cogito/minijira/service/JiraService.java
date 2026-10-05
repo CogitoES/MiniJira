@@ -11,7 +11,6 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -23,57 +22,119 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * JiraService - Integration with Atlassian Jira API
+ * 
+ * Provides functionality to export projects, tasks, and comments to Jira,
+ * synchronizing data between MiniJira and Jira instances. Handles Jira API
+ * communication with proper authentication and Atlassian Document Format (ADF).
+ */
 @Service
 public class JiraService {
 
+    // ========== Logging ==========
+
     private static final Logger logger = LoggerFactory.getLogger(JiraService.class);
 
-    // API Constants
+    // ========== API Constants ==========
+
+    /** Base path for Jira REST API v3 */
     private static final String JIRA_API_BASE = "/rest/api/3";
+    
+    /** Jira project endpoint path */
     private static final String JIRA_PROJECT_ENDPOINT = JIRA_API_BASE + "/project/";
+    
+    /** Jira issue endpoint path */
     private static final String JIRA_ISSUE_ENDPOINT = JIRA_API_BASE + "/issue/";
+    
+    /** Jira comment endpoint path */
     private static final String JIRA_COMMENT_ENDPOINT = "/comment/";
 
-    // ADF Constants
+    // ========== ADF Constants ==========
+
+    /** Atlassian Document Format (ADF) type for document root */
     private static final String ADF_TYPE_DOC = "doc";
+    
+    /** Atlassian Document Format (ADF) type for paragraph */
     private static final String ADF_TYPE_PARAGRAPH = "paragraph";
+    
+    /** Atlassian Document Format (ADF) type for text */
     private static final String ADF_TYPE_TEXT = "text";
+    
+    /** Atlassian Document Format (ADF) version */
     private static final int ADF_VERSION = 1;
 
-    // Header Constants
+    // ========== HTTP Header Constants ==========
+
+    /** Header name for internal service authentication secret */
     private static final String HEADER_INTERNAL_SECRET = "X-Internal-Service-Secret";
+    
+    /** Standard HTTP Authorization header name */
     private static final String HEADER_AUTHORIZATION = "Authorization";
+    
+    /** Authorization scheme prefix for Basic authentication */
     private static final String AUTH_BASIC_PREFIX = "Basic ";
 
+    // ========== Configuration Properties ==========
+
+    /** Jira instance URL from configuration */
     @Value("${jira.url}")
     private String jiraUrl;
 
+    /** Jira account email for API authentication */
     @Value("${jira.email}")
     private String jiraEmail;
 
+    /** Jira API token for authentication */
     @Value("${jira.api.token}")
     private String jiraApiToken;
 
+    /** Project Service URL for inter-service communication */
     @Value("${project.service.url}")
     private String projectServiceUrl;
 
+    /** Task Service URL for inter-service communication */
     @Value("${task.service.url}")
     private String taskServiceUrl;
 
+    /** Comment Service URL for inter-service communication */
     @Value("${comment.service.url}")
     private String commentServiceUrl;
 
+    /** Internal service secret for service-to-service authentication */
     @Value("${app.internal.secret}")
     private String internalSecret;
 
+    // ========== Dependencies ==========
+
+    /** REST template for HTTP communications */
     private final RestTemplate restTemplate;
+    
+    /** Cached Jira HTTP headers to avoid repeated encoding */
     private HttpHeaders cachedJiraHeaders;
 
+    /**
+     * Constructs JiraService with required dependencies
+     * 
+     * @param restTemplate the REST template for HTTP requests
+     */
     @Autowired
     public JiraService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
+    // ========== Export Operations ==========
+
+    /**
+     * Exports a project and all its tasks and comments to Jira
+     * 
+     * Fetches project data from local services and synchronizes with Jira,
+     * updating project information, all tasks/issues, and their comments.
+     * 
+     * @param projectId the ID of the project to export
+     * @throws IllegalArgumentException if project not found
+     * @throws RuntimeException if Jira API calls fail
+     */
     public void exportProject(Long projectId) {
         logger.info("Starting export for project ID: {}", projectId);
 
@@ -101,10 +162,10 @@ public class JiraService {
             }
         }
 
+        // Export all tasks associated with the project
         for (TaskDto task : tasks) {
             logger.debug("Exporting task: {} (JiraKey: {})", task.getTitle(), task.getJiraKey());
 
-            // Update Task (Issue) in JIRA if jiraKey is present
             if (isValidJiraKey(task.getJiraKey())) {
                 try {
                     updateJiraIssue(task);
@@ -115,6 +176,7 @@ public class JiraService {
                 }
             }
 
+            // Export all comments for the task
             List<CommentDto> comments = fetchComments(task.getId());
             if (comments == null) {
                 comments = Collections.emptyList();
@@ -123,7 +185,6 @@ public class JiraService {
             for (CommentDto comment : comments) {
                 logger.debug("Exporting comment for task: {}", task.getJiraKey());
 
-                // Update Comment in JIRA if both jiraKeys are present
                 if (isValidJiraKey(comment.getJiraKey()) && isValidJiraKey(task.getJiraKey())) {
                     try {
                         updateJiraComment(task.getJiraKey(), comment);
@@ -139,10 +200,14 @@ public class JiraService {
         logger.info("Export completed for project ID: {}", projectId);
     }
 
-    private boolean isValidJiraKey(String jiraKey) {
-        return jiraKey != null && !jiraKey.isEmpty();
-    }
+    // ========== Jira Update Operations ==========
 
+    /**
+     * Updates a project in Jira with current data
+     * 
+     * @param project the project data to update
+     * @throws RuntimeException if the Jira API request fails
+     */
     private void updateJiraProject(ProjectDto project) {
         String url = jiraUrl + JIRA_PROJECT_ENDPOINT + project.getJiraKey();
         Map<String, Object> body = new HashMap<>();
@@ -157,6 +222,12 @@ public class JiraService {
         }
     }
 
+    /**
+     * Updates a task/issue in Jira with current data
+     * 
+     * @param task the task data to update
+     * @throws RuntimeException if the Jira API request fails
+     */
     private void updateJiraIssue(TaskDto task) {
         String url = jiraUrl + JIRA_ISSUE_ENDPOINT + task.getJiraKey();
         Map<String, Object> body = new HashMap<>();
@@ -173,6 +244,13 @@ public class JiraService {
         }
     }
 
+    /**
+     * Updates a comment in Jira with current data
+     * 
+     * @param taskJiraKey the Jira key of the task/issue
+     * @param comment the comment data to update
+     * @throws RuntimeException if the Jira API request fails
+     */
     private void updateJiraComment(String taskJiraKey, CommentDto comment) {
         String url = jiraUrl + JIRA_ISSUE_ENDPOINT + taskJiraKey + JIRA_COMMENT_ENDPOINT + comment.getJiraKey();
         Map<String, Object> body = new HashMap<>();
@@ -186,6 +264,94 @@ public class JiraService {
         }
     }
 
+    // ========== Data Fetching Operations ==========
+
+    /**
+     * Fetches a project from the Project Service
+     * 
+     * @param projectId the project ID to fetch
+     * @return the project DTO, or null if not found
+     */
+    private ProjectDto fetchProject(Long projectId) {
+        String url = projectServiceUrl + "/projects/" + projectId;
+        logger.debug("Fetching project from: {}", url);
+        try {
+            return restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    new HttpEntity<>(getInternalServiceHeaders()),
+                    ProjectDto.class
+            ).getBody();
+        } catch (Exception e) {
+            logger.error("Error fetching project from {}: {}", url, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * Fetches all tasks for a project from the Task Service
+     * 
+     * @param projectId the project ID
+     * @return list of task DTOs
+     */
+    private List<TaskDto> fetchTasks(Long projectId) {
+        String url = taskServiceUrl + "/projects/" + projectId + "/tasks";
+        logger.debug("Fetching tasks from: {}", url);
+        try {
+            return restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    new HttpEntity<>(getInternalServiceHeaders()),
+                    new ParameterizedTypeReference<List<TaskDto>>() {}
+            ).getBody();
+        } catch (Exception e) {
+            logger.error("Error fetching tasks from {}: {}", url, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * Fetches all comments for a task from the Comment Service
+     * 
+     * @param taskId the task ID
+     * @return list of comment DTOs
+     */
+    private List<CommentDto> fetchComments(Long taskId) {
+        String url = commentServiceUrl + "/tasks/" + taskId + "/comments";
+        logger.debug("Fetching comments from: {}", url);
+        try {
+            return restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    new HttpEntity<>(getInternalServiceHeaders()),
+                    new ParameterizedTypeReference<List<CommentDto>>() {}
+            ).getBody();
+        } catch (Exception e) {
+            logger.error("Error fetching comments from {}: {}", url, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    // ========== Utility Methods ==========
+
+    /**
+     * Validates if a Jira key string is non-null and non-empty
+     * 
+     * @param jiraKey the Jira key to validate
+     * @return true if the key is valid, false otherwise
+     */
+    private boolean isValidJiraKey(String jiraKey) {
+        return jiraKey != null && !jiraKey.isEmpty();
+    }
+
+    /**
+     * Converts plain text to Atlassian Document Format (ADF)
+     * 
+     * Creates an ADF document with a single paragraph containing the provided text.
+     * 
+     * @param text the plain text to convert
+     * @return a Map representing the ADF structure
+     */
     private Map<String, Object> convertToAdf(String text) {
         String safeText = text != null ? text : "";
         
@@ -205,54 +371,13 @@ public class JiraService {
         return adf;
     }
 
-    private ProjectDto fetchProject(Long projectId) {
-        String url = projectServiceUrl + "/projects/" + projectId;
-        logger.debug("Fetching project from: {}", url);
-        try {
-            return restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    new HttpEntity<>(getInternalServiceHeaders()),
-                    ProjectDto.class
-            ).getBody();
-        } catch (Exception e) {
-            logger.error("Error fetching project from {}: {}", url, e.getMessage(), e);
-            throw e;
-        }
-    }
+    // ========== HTTP Header Builders ==========
 
-    private List<TaskDto> fetchTasks(Long projectId) {
-        String url = taskServiceUrl + "/projects/" + projectId + "/tasks";
-        logger.debug("Fetching tasks from: {}", url);
-        try {
-            return restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    new HttpEntity<>(getInternalServiceHeaders()),
-                    new ParameterizedTypeReference<List<TaskDto>>() {}
-            ).getBody();
-        } catch (Exception e) {
-            logger.error("Error fetching tasks from {}: {}", url, e.getMessage(), e);
-            throw e;
-        }
-    }
-
-    private List<CommentDto> fetchComments(Long taskId) {
-        String url = commentServiceUrl + "/tasks/" + taskId + "/comments";
-        logger.debug("Fetching comments from: {}", url);
-        try {
-            return restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    new HttpEntity<>(getInternalServiceHeaders()),
-                    new ParameterizedTypeReference<List<CommentDto>>() {}
-            ).getBody();
-        } catch (Exception e) {
-            logger.error("Error fetching comments from {}: {}", url, e.getMessage(), e);
-            throw e;
-        }
-    }
-
+    /**
+     * Builds HTTP headers for internal service-to-service communication
+     * 
+     * @return HttpHeaders configured with internal service secret
+     */
     private HttpHeaders getInternalServiceHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.set(HEADER_INTERNAL_SECRET, internalSecret);
@@ -260,6 +385,14 @@ public class JiraService {
         return headers;
     }
 
+    /**
+     * Builds HTTP headers for Jira API authentication
+     * 
+     * Uses cached headers if available to avoid repeated Base64 encoding.
+     * Includes Basic Authentication with Jira email and API token.
+     * 
+     * @return HttpHeaders configured with Jira authentication
+     */
     private HttpHeaders getJiraHeaders() {
         if (cachedJiraHeaders != null) {
             return cachedJiraHeaders;
