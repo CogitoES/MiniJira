@@ -1,29 +1,28 @@
 package com.cogito.minijira.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
 
-@Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class JiraIssueDto {
-    private String id;
-    private String key;
-    private Fields fields;
-
-    @Data
+public record JiraIssueDto(
+    String id,
+    String key,
+    Fields fields
+) {
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Fields {
-        private String summary;
-        private Object description;
-        private Status status;
-        private Priority priority;
-        private User reporter;
+    public record Fields(
+        String summary,
+        Object description,
+        Status status,
+        Priority priority,
+        User reporter
+    ) {
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record Status(String name) {}
 
-        @Data
-        public static class Status { private String name; }
-        @Data
-        public static class Priority { private String name; }
-        @Data
-        public static class User { private String accountId; }
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record Priority(String name) {}
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record User(String accountId) {}
     }
 }

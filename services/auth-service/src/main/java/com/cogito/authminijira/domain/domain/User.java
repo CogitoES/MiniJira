@@ -25,7 +25,7 @@ public class User {
     @Column(nullable = false)
     private String username;
 
-    @Column(nullable = false)
+    @Column(name = "password", nullable = false)
     private String encryptedPassword;
 
     @CreatedDate
@@ -35,6 +35,6 @@ public class User {
     @Column(nullable = false)
     private String role; // Consider Enum for better type safety later
 
-    @Column(length = 1000)
+    @Column(name = "refresh_token", length = 1000)
     private String refreshToken;
 }

@@ -2,13 +2,10 @@ services:
   # The monolith we are currently strangling
   monolith:
     build: .
+    env_file:
+      - .env
     ports:
       - "8081:8080" # Moved from 8080 to 8081 to free 8080 for the gateway
-    environment:
-      - JIRA_URL=${JIRA_URL}
-      - JIRA_EMAIL=${JIRA_EMAIL}
-      - JIRA_API_TOKEN=${JIRA_API_TOKEN}
-      - JIRA_LEAD_ACCOUNT_ID=${JIRA_LEAD_ACCOUNT_ID}
 
   # The future entry point
   gateway:
@@ -22,6 +19,36 @@ services:
   # The future Auth service
   auth-service:
     build: ./auth-service # Placeholder for Phase 3
+    env_file:
+      - .env
+    depends_on:
+      - monolith
+
+  comment-service:
+    build: ./comment-service
+    env_file:
+      - .env
+    depends_on:
+      - monolith
+
+  jira-service:
+    build: ./jira-service
+    env_file:
+      - .env
+    depends_on:
+      - monolith
+
+  project-service:
+    build: ./project-service
+    env_file:
+      - .env
+    depends_on:
+      - monolith
+
+  task-service:
+    build: ./task-service
+    env_file:
+      - .env
     depends_on:
       - monolith
 

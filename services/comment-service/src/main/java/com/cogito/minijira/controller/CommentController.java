@@ -1,5 +1,6 @@
 package com.cogito.minijira.controller;
 
+import com.cogito.minijira.client.AuthClient;
 import com.cogito.minijira.domain.Comment;
 import com.cogito.minijira.repository.CommentRepository;
 import com.cogito.minijira.security.UserPrincipal;
@@ -7,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
@@ -16,15 +16,16 @@ import java.util.List;
 public class CommentController {
 
     private final CommentRepository commentRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final AuthClient authClient;
 
-    public CommentController(CommentRepository commentRepository) {
+    public CommentController(CommentRepository commentRepository, AuthClient authClient) {
         this.commentRepository = commentRepository;
+        this.authClient = authClient;
     }
 
     private void validateUserExists(Long userId) {
         try {
-            Boolean exists = restTemplate.getForObject("http://localhost:8081/auth/exists/" + userId, Boolean.class);
+            Boolean exists = authClient.exists(userId);
             if (exists == null || !exists) {
                 throw new RuntimeException("User does not exist");
             }
@@ -51,7 +52,6 @@ public class CommentController {
         if (existingComment != null) {
             existingComment.setJiraKey(comment.getJiraKey());
             existingComment.setText(comment.getText());
-            // Preserve task/user id
             comment = existingComment;
         } else {
             comment.setTaskId(taskId);
@@ -72,6 +72,13 @@ public class CommentController {
         return ResponseEntity.ok(commentRepository.save(comment));
     }
 
+    @GetMapping("/comments/{commentId}")
+    public ResponseEntity<Comment> getCommentById(@PathVariable Long commentId) {
+        return commentRepository.findById(commentId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PutMapping("/comments/{commentId}")
     public ResponseEntity<Comment> updateComment(@PathVariable Long commentId, @RequestBody Comment commentDetails) {
         return commentRepository.findById(commentId)
@@ -80,5 +87,14 @@ public class CommentController {
                     return ResponseEntity.ok(commentRepository.save(comment));
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/comments/{commentId}")
+    public ResponseEntity<Void> deleteComment(@PathVariable Long commentId) {
+        if (!commentRepository.existsById(commentId)) {
+            return ResponseEntity.notFound().build();
+        }
+        commentRepository.deleteById(commentId);
+        return ResponseEntity.noContent().build();
     }
 }

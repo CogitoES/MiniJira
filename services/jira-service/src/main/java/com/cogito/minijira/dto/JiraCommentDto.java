@@ -1,15 +1,13 @@
 package com.cogito.minijira.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
 
-@Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class JiraCommentDto {
-    private String id;
-    private Object body;
-    private Author author;
-
-    @Data
-    public static class Author { private String accountId; }
+public record JiraCommentDto(
+    String id,
+    Object body,
+    Author author
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Author(String accountId) {}
 }

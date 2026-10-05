@@ -5,22 +5,45 @@ import com.cogito.minijira.common.dto.ProjectDto;
 import com.cogito.minijira.common.dto.TaskDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Base64;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class JiraService {
 
     private static final Logger logger = LoggerFactory.getLogger(JiraService.class);
+
+    // API Constants
+    private static final String JIRA_API_BASE = "/rest/api/3";
+    private static final String JIRA_PROJECT_ENDPOINT = JIRA_API_BASE + "/project/";
+    private static final String JIRA_ISSUE_ENDPOINT = JIRA_API_BASE + "/issue/";
+    private static final String JIRA_COMMENT_ENDPOINT = "/comment/";
+
+    // ADF Constants
+    private static final String ADF_TYPE_DOC = "doc";
+    private static final String ADF_TYPE_PARAGRAPH = "paragraph";
+    private static final String ADF_TYPE_TEXT = "text";
+    private static final int ADF_VERSION = 1;
+
+    // Header Constants
+    private static final String HEADER_INTERNAL_SECRET = "X-Internal-Service-Secret";
+    private static final String HEADER_AUTHORIZATION = "Authorization";
+    private static final String AUTH_BASIC_PREFIX = "Basic ";
 
     @Value("${jira.url}")
     private String jiraUrl;
@@ -43,131 +66,148 @@ public class JiraService {
     @Value("${app.internal.secret}")
     private String internalSecret;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
+    private HttpHeaders cachedJiraHeaders;
+
+    @Autowired
+    public JiraService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
 
     public void exportProject(Long projectId) {
         logger.info("Starting export for project ID: {}", projectId);
 
-        logger.info("Fetching project...");
         ProjectDto project = fetchProject(projectId);
-        logger.info("Project fetched: {}", project);
-
         if (project == null) {
             logger.error("Project not found: {}", projectId);
             throw new IllegalArgumentException("Project not found: " + projectId);
         }
 
-        logger.info("Fetching tasks...");
         List<TaskDto> tasks = fetchTasks(projectId);
-        logger.info("Tasks fetched: {}", tasks);
-
         if (tasks == null) {
-            logger.warn("No tasks found for project: {}", projectId);
-            tasks = java.util.Collections.emptyList();
+            tasks = Collections.emptyList();
         }
 
         logger.info("Exporting project: {} (JiraKey: {})", project.getName(), project.getJiraKey());
 
-        // 1. Update Project in JIRA if jiraKey is present
-        if (project.getJiraKey() != null && !project.getJiraKey().isEmpty()) {
+        // Update Project in JIRA if jiraKey is present
+        if (isValidJiraKey(project.getJiraKey())) {
             try {
-                logger.info("Updating JIRA project: {}", project.getJiraKey());
                 updateJiraProject(project);
                 logger.info("Successfully updated project in JIRA: {}", project.getJiraKey());
             } catch (Exception e) {
                 logger.error("Failed to update project in JIRA: {}", project.getJiraKey(), e);
-                throw e; // Re-throw to see where it fails in the controller
+                throw e;
             }
-        } else {
-            logger.info("No JiraKey found, skipping JIRA project update");
         }
 
         for (TaskDto task : tasks) {
-            logger.info("Exporting task: {} (JiraKey: {})", task.getTitle(), task.getJiraKey());
-            
-            // 2. Update Task (Issue) in JIRA if jiraKey is present
-            if (task.getJiraKey() != null && !task.getJiraKey().isEmpty()) {
+            logger.debug("Exporting task: {} (JiraKey: {})", task.getTitle(), task.getJiraKey());
+
+            // Update Task (Issue) in JIRA if jiraKey is present
+            if (isValidJiraKey(task.getJiraKey())) {
                 try {
                     updateJiraIssue(task);
-                    logger.info("Successfully updated task in JIRA: {}", task.getJiraKey());
+                    logger.debug("Successfully updated task in JIRA: {}", task.getJiraKey());
                 } catch (Exception e) {
                     logger.error("Failed to update task in JIRA: {}", task.getJiraKey(), e);
+                    throw e;
                 }
             }
 
             List<CommentDto> comments = fetchComments(task.getId());
             if (comments == null) {
-                logger.warn("No comments found for task: {}", task.getId());
-                comments = java.util.Collections.emptyList();
+                comments = Collections.emptyList();
             }
-            
+
             for (CommentDto comment : comments) {
-                logger.info("Exporting comment: {} (JiraKey: {})", comment.getText(), comment.getJiraKey());
-                
-                // 3. Update Comment in JIRA if jiraKey and task's jiraKey are present
-                if (comment.getJiraKey() != null && !comment.getJiraKey().isEmpty() && task.getJiraKey() != null) {
+                logger.debug("Exporting comment for task: {}", task.getJiraKey());
+
+                // Update Comment in JIRA if both jiraKeys are present
+                if (isValidJiraKey(comment.getJiraKey()) && isValidJiraKey(task.getJiraKey())) {
                     try {
                         updateJiraComment(task.getJiraKey(), comment);
-                        logger.info("Successfully updated comment in JIRA: {}", comment.getJiraKey());
+                        logger.debug("Successfully updated comment in JIRA: {}", comment.getJiraKey());
                     } catch (Exception e) {
                         logger.error("Failed to update comment in JIRA: {}", comment.getJiraKey(), e);
+                        throw e;
                     }
                 }
             }
         }
+
+        logger.info("Export completed for project ID: {}", projectId);
+    }
+
+    private boolean isValidJiraKey(String jiraKey) {
+        return jiraKey != null && !jiraKey.isEmpty();
     }
 
     private void updateJiraProject(ProjectDto project) {
-        String url = jiraUrl + "/rest/api/3/project/" + project.getJiraKey();
-        java.util.Map<String, Object> body = new java.util.HashMap<>();
+        String url = jiraUrl + JIRA_PROJECT_ENDPOINT + project.getJiraKey();
+        Map<String, Object> body = new HashMap<>();
         body.put("name", project.getName());
         body.put("description", project.getDescription());
 
-        HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(body, getJiraHeaders());
-        restTemplate.exchange(url, HttpMethod.PUT, entity, Void.class);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, getJiraHeaders());
+        ResponseEntity<Void> response = restTemplate.exchange(url, HttpMethod.PUT, entity, Void.class);
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("Failed to update JIRA project. Status: " + response.getStatusCode());
+        }
     }
 
     private void updateJiraIssue(TaskDto task) {
-        String url = jiraUrl + "/rest/api/3/issue/" + task.getJiraKey();
-        java.util.Map<String, Object> body = new java.util.HashMap<>();
-        java.util.Map<String, Object> fields = new java.util.HashMap<>();
+        String url = jiraUrl + JIRA_ISSUE_ENDPOINT + task.getJiraKey();
+        Map<String, Object> body = new HashMap<>();
+        Map<String, Object> fields = new HashMap<>();
         fields.put("summary", task.getTitle());
         fields.put("description", convertToAdf(task.getDescription()));
         body.put("fields", fields);
 
-        HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(body, getJiraHeaders());
-        restTemplate.exchange(url, HttpMethod.PUT, entity, Void.class);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, getJiraHeaders());
+        ResponseEntity<Void> response = restTemplate.exchange(url, HttpMethod.PUT, entity, Void.class);
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("Failed to update JIRA issue. Status: " + response.getStatusCode());
+        }
     }
 
     private void updateJiraComment(String taskJiraKey, CommentDto comment) {
-        String url = jiraUrl + "/rest/api/3/issue/" + taskJiraKey + "/comment/" + comment.getJiraKey();
-        java.util.Map<String, Object> body = new java.util.HashMap<>();
+        String url = jiraUrl + JIRA_ISSUE_ENDPOINT + taskJiraKey + JIRA_COMMENT_ENDPOINT + comment.getJiraKey();
+        Map<String, Object> body = new HashMap<>();
         body.put("body", convertToAdf(comment.getText()));
 
-        HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(body, getJiraHeaders());
-        restTemplate.exchange(url, HttpMethod.PUT, entity, Void.class);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, getJiraHeaders());
+        ResponseEntity<Void> response = restTemplate.exchange(url, HttpMethod.PUT, entity, Void.class);
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("Failed to update JIRA comment. Status: " + response.getStatusCode());
+        }
     }
 
-    private java.util.Map<String, Object> convertToAdf(String text) {
-        java.util.Map<String, Object> adf = new java.util.HashMap<>();
-        adf.put("type", "doc");
-        adf.put("version", 1);
+    private Map<String, Object> convertToAdf(String text) {
+        String safeText = text != null ? text : "";
         
-        java.util.Map<String, Object> paragraph = new java.util.HashMap<>();
-        paragraph.put("type", "paragraph");
-        
-        java.util.Map<String, Object> textNode = new java.util.HashMap<>();
-        textNode.put("type", "text");
-        textNode.put("text", text != null ? text : "");
-        
-        paragraph.put("content", java.util.Collections.singletonList(textNode));
-        adf.put("content", java.util.Collections.singletonList(paragraph));
+        Map<String, Object> adf = new HashMap<>();
+        adf.put("type", ADF_TYPE_DOC);
+        adf.put("version", ADF_VERSION);
+
+        Map<String, Object> paragraph = new HashMap<>();
+        paragraph.put("type", ADF_TYPE_PARAGRAPH);
+
+        Map<String, Object> textNode = new HashMap<>();
+        textNode.put("type", ADF_TYPE_TEXT);
+        textNode.put("text", safeText);
+
+        paragraph.put("content", Collections.singletonList(textNode));
+        adf.put("content", Collections.singletonList(paragraph));
         return adf;
     }
 
     private ProjectDto fetchProject(Long projectId) {
         String url = projectServiceUrl + "/projects/" + projectId;
-        logger.info("Fetching project from: {}", url);
+        logger.debug("Fetching project from: {}", url);
         try {
             return restTemplate.exchange(
                     url,
@@ -176,14 +216,14 @@ public class JiraService {
                     ProjectDto.class
             ).getBody();
         } catch (Exception e) {
-            logger.error("Error fetching project from {}: {}", url, e.getMessage());
+            logger.error("Error fetching project from {}: {}", url, e.getMessage(), e);
             throw e;
         }
     }
 
     private List<TaskDto> fetchTasks(Long projectId) {
         String url = taskServiceUrl + "/projects/" + projectId + "/tasks";
-        logger.info("Fetching tasks from: {}", url);
+        logger.debug("Fetching tasks from: {}", url);
         try {
             return restTemplate.exchange(
                     url,
@@ -192,14 +232,14 @@ public class JiraService {
                     new ParameterizedTypeReference<List<TaskDto>>() {}
             ).getBody();
         } catch (Exception e) {
-            logger.error("Error fetching tasks from {}: {}", url, e.getMessage());
+            logger.error("Error fetching tasks from {}: {}", url, e.getMessage(), e);
             throw e;
         }
     }
 
     private List<CommentDto> fetchComments(Long taskId) {
         String url = commentServiceUrl + "/tasks/" + taskId + "/comments";
-        logger.info("Fetching comments from: {}", url);
+        logger.debug("Fetching comments from: {}", url);
         try {
             return restTemplate.exchange(
                     url,
@@ -208,24 +248,30 @@ public class JiraService {
                     new ParameterizedTypeReference<List<CommentDto>>() {}
             ).getBody();
         } catch (Exception e) {
-            logger.error("Error fetching comments from {}: {}", url, e.getMessage());
+            logger.error("Error fetching comments from {}: {}", url, e.getMessage(), e);
             throw e;
         }
     }
 
     private HttpHeaders getInternalServiceHeaders() {
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Internal-Service-Secret", internalSecret);
+        headers.set(HEADER_INTERNAL_SECRET, internalSecret);
         headers.setContentType(MediaType.APPLICATION_JSON);
         return headers;
     }
 
     private HttpHeaders getJiraHeaders() {
+        if (cachedJiraHeaders != null) {
+            return cachedJiraHeaders;
+        }
+
         HttpHeaders headers = new HttpHeaders();
         String auth = jiraEmail + ":" + jiraApiToken;
         String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
-        headers.set("Authorization", "Basic " + encodedAuth);
+        headers.set(HEADER_AUTHORIZATION, AUTH_BASIC_PREFIX + encodedAuth);
         headers.setContentType(MediaType.APPLICATION_JSON);
-        return headers;
+
+        cachedJiraHeaders = headers;
+        return cachedJiraHeaders;
     }
 }

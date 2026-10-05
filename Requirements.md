@@ -151,11 +151,7 @@ Features
 * create
 * update
 * assign
-* move between statuses
 * delete
-* filtering
-* pagination
-* sorting
 
 ---
 
@@ -180,39 +176,6 @@ editedAt
 
 ---
 
-# 6. Search
-
-Support searching by
-
-* title
-* description
-* labels
-* assignee
-* status
-* priority
-* project
-
-Advanced filtering
-
-Example
-
-```
-status=TODO
-priority=HIGH
-assignee=5
-label=backend
-```
-
-Support pagination
-
-```
-page
-size
-sort
-```
-
----
-
 # 7. Jira Integration
 
 Create a dedicated microservice.
@@ -221,9 +184,8 @@ Responsibilities
 
 * connect to Jira Cloud
 * authenticate using API token
-* create issue
-* update issue
-* synchronize task status
+* synchronize project status
+* synchronize project status
 
 Endpoints
 
@@ -540,19 +502,5 @@ These can make the project stand out:
 
 ## Recommended Repository Structure
 
-```
-mini-jira/
-│
-├── auth-service/
-├── jira-sync-service/
-├── docker/
-├── docs/
-├── postman/
-├── .github/
-│   └── workflows/
-├── docker-compose.yml
-├── README.md
-└── LICENSE
-```
 
 This scope is substantial but realistic for a portfolio project. Completing it would showcase proficiency in Spring Boot, Spring Security, Hibernate/JPA, REST API design, PostgreSQL, Flyway, Docker, testing with JUnit/Testcontainers, GitHub Actions, GCP deployment, and basic microservice architecture—all skills commonly sought for mid-level Java backend positions.

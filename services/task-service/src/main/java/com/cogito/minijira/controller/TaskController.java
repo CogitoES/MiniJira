@@ -1,5 +1,6 @@
 package com.cogito.minijira.controller;
 
+import com.cogito.minijira.client.AuthClient;
 import com.cogito.minijira.domain.Task;
 import com.cogito.minijira.repository.TaskRepository;
 import com.cogito.minijira.security.UserPrincipal;
@@ -7,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
@@ -15,15 +15,16 @@ import java.util.List;
 public class TaskController {
 
     private final TaskRepository taskRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final AuthClient authClient;
 
-    public TaskController(TaskRepository taskRepository) {
+    public TaskController(TaskRepository taskRepository, AuthClient authClient) {
         this.taskRepository = taskRepository;
+        this.authClient = authClient;
     }
 
     private void validateUserExists(Long userId) {
         try {
-            Boolean exists = restTemplate.getForObject("http://localhost:8081/auth/exists/" + userId, Boolean.class);
+            Boolean exists = authClient.exists(userId);
             if (exists == null || !exists) {
                 throw new RuntimeException("User does not exist");
             }

@@ -52,15 +52,15 @@ public class JiraSyncService {
         List<JiraProjectDto> projects = fetchProjectsFromJira();
         for (JiraProjectDto projectDto : projects) {
             // 1. Create project in project-service
-            logger.info("Syncing project: {}", projectDto.getName());
+            logger.info("Syncing project: {}", projectDto.name());
             
             Long projectId = null;
             try {
                 com.cogito.minijira.common.dto.ProjectRequest projectRequest = new com.cogito.minijira.common.dto.ProjectRequest();
-                projectRequest.setName(projectDto.getName());
-                projectRequest.setDescription(projectDto.getDescription());
+                projectRequest.setName(projectDto.name());
+                projectRequest.setDescription(projectDto.description());
                 projectRequest.setStatus("ACTIVE");
-                projectRequest.setJiraKey(projectDto.getKey());
+                projectRequest.setJiraKey(projectDto.key());
 
                 HttpEntity<com.cogito.minijira.common.dto.ProjectRequest> entity = new HttpEntity<>(projectRequest, internalHeaders);
                 logger.info("Sending request to {} with headers: {}", projectServiceUrl + "/projects", entity.getHeaders());
@@ -71,21 +71,21 @@ public class JiraSyncService {
                         com.cogito.minijira.common.dto.ProjectDto.class
                 );
                 projectId = projectResponse.getBody().getId();
-                logger.info("Project created/synchronized: {} (ID: {})", projectDto.getName(), projectId);
+                logger.info("Project created/synchronized: {} (ID: {})", projectDto.name(), projectId);
             } catch (Exception e) {
-                logger.error("Failed to sync project: {}", projectDto.getName(), e);
+                logger.error("Failed to sync project: {}", projectDto.name(), e);
             }
 
             if (projectId != null) {
-                List<JiraIssueDto> issues = fetchIssuesFromJira(projectDto.getKey());
+                List<JiraIssueDto> issues = fetchIssuesFromJira(projectDto.key());
                 for (JiraIssueDto issueDto : issues) {
                     // 2. Create task in task-service
                     try {
                         com.cogito.minijira.common.dto.TaskDto task = new com.cogito.minijira.common.dto.TaskDto();
-                        task.setTitle(issueDto.getFields().getSummary());
-                        task.setStatus(issueDto.getFields().getStatus() != null ? issueDto.getFields().getStatus().getName() : "OPEN");
-                        task.setPriority(issueDto.getFields().getPriority() != null ? issueDto.getFields().getPriority().getName() : "MEDIUM");
-                        task.setJiraKey(issueDto.getKey());
+                        task.setTitle(issueDto.fields().summary());
+                        task.setStatus(issueDto.fields().status() != null ? issueDto.fields().status().name() : "OPEN");
+                        task.setPriority(issueDto.fields().priority() != null ? issueDto.fields().priority().name() : "MEDIUM");
+                        task.setJiraKey(issueDto.key());
 
                         // POST the task
                         ResponseEntity<com.cogito.minijira.common.dto.TaskDto> taskResponse = restTemplate.postForEntity(
@@ -94,28 +94,28 @@ public class JiraSyncService {
                                 com.cogito.minijira.common.dto.TaskDto.class
                         );
                         Long taskId = taskResponse.getBody().getId(); // Assuming TaskDto has an ID
-                        logger.info("Task synchronized: {} (ID: {})", issueDto.getKey(), taskId);
+                        logger.info("Task synchronized: {} (ID: {})", issueDto.key(), taskId);
 
                         // 3. Sync comments for the task
-                        List<JiraCommentDto> comments = fetchCommentsFromJira(issueDto.getKey());
+                        List<JiraCommentDto> comments = fetchCommentsFromJira(issueDto.key());
                         for (JiraCommentDto commentDto : comments) {
                             try {
                                 CommentDto comment = new CommentDto();
-                                comment.setText(extractTextFromAdf(commentDto.getBody()));
-                                comment.setJiraKey(commentDto.getId());
+                                comment.setText(extractTextFromAdf(commentDto.body()));
+                                comment.setJiraKey(commentDto.id());
                                 
                                 restTemplate.postForEntity(
                                         commentServiceUrl + "/tasks/" + taskId + "/comments",
                                         new HttpEntity<>(comment, internalHeaders),
                                         CommentDto.class
                                 );
-                                logger.info("Comment synchronized: {}", commentDto.getId());
+                                logger.info("Comment synchronized: {}", commentDto.id());
                             } catch (Exception e) {
-                                logger.error("Failed to sync comment: {}", commentDto.getId(), e);
+                                logger.error("Failed to sync comment: {}", commentDto.id(), e);
                             }
                         }
                     } catch (Exception e) {
-                        logger.error("Failed to sync task: {}", issueDto.getKey(), e);
+                        logger.error("Failed to sync task: {}", issueDto.key(), e);
                     }
                 }
             }
@@ -205,24 +205,24 @@ public class JiraSyncService {
             JiraSearchResponse body = response.getBody();
             logger.info("Jira API response body: {}", body);
 
-            if (body == null || body.getIssues() == null || body.getIssues().isEmpty()) {
+            if (body == null || body.issues() == null || body.issues().isEmpty()) {
                 logger.warn("Jira API response body is null, or issues list is empty/null. Body: {}", body);
                 break;
             }
 
-            allIssues.addAll(body.getIssues());
+            allIssues.addAll(body.issues());
 
             logger.info(
                     "Fetched {} issues from Jira, total: {}",
-                    body.getIssues().size(),
+                    body.issues().size(),
                     allIssues.size()
             );
 
-            if (startAt + body.getIssues().size() >= body.getTotal()) {
+            if (body.total() == null || startAt + body.issues().size() >= body.total()) {
                 break;
             }
 
-            startAt += body.getIssues().size();
+            startAt += body.issues().size();
         }
         logger.info(
                 "Fetched total {} issues from Jira",
@@ -238,7 +238,7 @@ public class JiraSyncService {
                 new HttpEntity<>(getJiraHeaders()),
                 JiraCommentResponse.class
         );
-        return response.getBody().getComments();
+        return response.getBody().comments();
     }
 
     private HttpHeaders getJiraHeaders() {

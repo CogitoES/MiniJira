@@ -1,0 +1,8 @@
+CREATE TABLE comments (
+    id BIGSERIAL PRIMARY KEY,
+    task_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    text TEXT NOT NULL,
+    jira_key VARCHAR(50) UNIQUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

@@ -1,5 +1,6 @@
 package com.cogito.minijira.controller;
 
+import com.cogito.minijira.client.AuthClient;
 import com.cogito.minijira.domain.Project;
 import com.cogito.minijira.common.dto.ProjectRequest;
 import com.cogito.minijira.service.ProjectService;
@@ -11,7 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
@@ -21,19 +21,21 @@ public class ProjectController {
 
     private static final Logger logger = LoggerFactory.getLogger(ProjectController.class);
     private final ProjectService projectService;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final AuthClient authClient;
 
-    public ProjectController(ProjectService projectService) {
+    public ProjectController(ProjectService projectService, AuthClient authClient) {
         this.projectService = projectService;
+        this.authClient = authClient;
     }
 
     private void validateUserExists(Long userId) {
         try {
-            Boolean exists = restTemplate.getForObject("http://localhost:8081/auth/exists/" + userId, Boolean.class);
+            Boolean exists = authClient.exists(userId);
             if (exists == null || !exists) {
                 throw new RuntimeException("User does not exist");
             }
         } catch (Exception e) {
+            logger.error("Failed to validate user existence for ID: {}", userId, e);
             throw new org.springframework.web.server.ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid user session");
         }
     }

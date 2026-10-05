@@ -1,9 +1,9 @@
 package com.cogito.minijira.dto;
 
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 
-@Data
-public class JiraCommentResponse {
-    private List<JiraCommentDto> comments;
-}
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record JiraCommentResponse(
+    List<JiraCommentDto> comments
+) {}

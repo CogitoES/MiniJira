@@ -1,0 +1,7 @@
+CREATE TABLE jira_sync_log (
+    id BIGSERIAL PRIMARY KEY,
+    task_id BIGINT NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    message TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

@@ -1,14 +1,5 @@
 # start_services.ps1
-# Starts all services in the services directory in new windows, loading .env variables
-
-$serviceDirs = @(
-    "services/auth-service",
-    "services/comment-service",
-    "services/gateway",
-    "services/jira-service",
-    "services/project-service",
-    "services/task-service"
-)
+# Starts Eureka Discovery Server first, waits for it to initialize, then starts all other services in new windows
 
 $rootGradlew = Join-Path (Get-Location) "gradlew.bat"
 $envFile = Join-Path (Get-Location) ".env"
@@ -23,16 +14,33 @@ if (Test-Path $envFile) {
     }
 }
 
-# Add diagnostic commands to verify env vars
-$diagCommands = @("Write-Host '--- Environment Variables ---' -ForegroundColor Yellow")
-foreach ($key in ($envCommands | ForEach-Object { $_.Split(':')[1].Split('=')[0].Trim() })) {
-    $diagCommands += "Write-Host '$key = '`$env:$key"
+$envCommandString = if ($envCommands.Count -gt 0) { ($envCommands -join '; ') + '; ' } else { "" }
+
+# 1. Start Eureka Discovery Server first
+$discoveryDir = "services/discovery-server"
+if (Test-Path $discoveryDir) {
+    $absDir = Convert-Path $discoveryDir
+    $logFile = Join-Path $absDir "service.log"
+    Write-Host "Starting Eureka Discovery Server in $discoveryDir... (Logs: $logFile)" -ForegroundColor Cyan
+    
+    $fullCommand = "$envCommandString Set-Location '$absDir'; & '$rootGradlew' bootRun | Tee-Object -FilePath '$logFile'"
+    Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", "$fullCommand"
+    
+    Write-Host "Waiting 8 seconds for Eureka Discovery Server to initialize..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 8
 }
-$diagCommands += "Write-Host '-----------------------------' -ForegroundColor Yellow"
 
-$envCommandString = if ($envCommands.Count -gt 0) { ($envCommands + $diagCommands -join '; ') + '; ' } else { "" }
+# 2. Start remaining microservices
+$serviceDirs = @(
+    "services/auth-service",
+    "services/comment-service",
+    "services/gateway",
+    "services/jira-service",
+    "services/project-service",
+    "services/task-service"
+)
 
-Write-Host "Starting all services..." -ForegroundColor Green
+Write-Host "Starting remaining microservices..." -ForegroundColor Green
 
 foreach ($dir in $serviceDirs) {
     if (Test-Path $dir) {
@@ -40,10 +48,7 @@ foreach ($dir in $serviceDirs) {
         $logFile = Join-Path $absDir "service.log"
         Write-Host "Starting service in $dir... (Logs: $logFile)" -ForegroundColor Cyan
         
-        # Construct the full command: Set env, Set Location, Run Gradle
         $fullCommand = "$envCommandString Set-Location '$absDir'; & '$rootGradlew' bootRun | Tee-Object -FilePath '$logFile'"
-        
-        # Use Start-Process with a new window
         Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", "$fullCommand"
         
         Write-Host "Started service in $dir." -ForegroundColor Gray
