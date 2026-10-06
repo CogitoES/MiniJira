@@ -22,9 +22,6 @@ const ProjectList = () => {
     onError: () => {
       alert('Failed to export project to Jira. Please check your credentials and configuration.');
     },
-    onSuccess: () => {
-      alert('Project exported to Jira successfully!');
-    }
   });
 
   const syncMutation = useMutation({
@@ -33,7 +30,6 @@ const ProjectList = () => {
       alert('Failed to sync with Jira.');
     },
     onSuccess: () => {
-      alert('Jira synchronization started!');
       queryClient.invalidateQueries({ queryKey: ['projects'] });
     }
   });

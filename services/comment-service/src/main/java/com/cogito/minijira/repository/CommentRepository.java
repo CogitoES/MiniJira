@@ -31,12 +31,4 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * @return an Optional containing the comment if found, empty otherwise
      */
     Optional<Comment> findByJiraKey(String jiraKey);
-    
-    /**
-     * Finds a comment by its text content
-     * 
-     * @param text the comment text to search for
-     * @return an Optional containing the comment if found, empty otherwise
-     */
-    Optional<Comment> findByText(String text);
 }

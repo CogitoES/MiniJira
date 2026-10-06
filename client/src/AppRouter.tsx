@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './AuthContext';
+import { useAuth } from './useAuth';
 import Login from './components/Login';
 import Register from './components/Register';
 import ProjectList from './components/ProjectList';

@@ -72,7 +72,7 @@ public class CommentController {
     /**
      * Creates a new comment on a task
      * 
-     * If a comment with the same Jira key or text exists, it will be updated instead.
+     * If a comment with the same Jira key exists, it will be updated instead.
      * 
      * @param taskId the task ID to add the comment to
      * @param comment the comment data
@@ -83,9 +83,6 @@ public class CommentController {
         Comment existingComment = null;
         if (comment.getJiraKey() != null) {
             existingComment = commentRepository.findByJiraKey(comment.getJiraKey()).orElse(null);
-        }
-        if (existingComment == null) {
-            existingComment = commentRepository.findByText(comment.getText()).orElse(null);
         }
 
         if (existingComment != null) {
